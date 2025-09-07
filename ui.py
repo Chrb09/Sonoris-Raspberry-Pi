@@ -2,6 +2,7 @@
 import json
 import os
 import time
+import sys   
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -145,6 +146,7 @@ class TranscriberApp(App):
         super().__init__(**kwargs)
         self.transcriber = transcriber
         self.layout = None
+        self._auto_start = auto_start
 
     def build(self):
         self.title = "Sonoris - Transcrição"
@@ -154,20 +156,19 @@ class TranscriberApp(App):
     def on_start(self):
         # register callbacks (wrap to schedule on UI thread)
         def on_partial(p):
-            # schedule UI update safely
             Clock.schedule_once(lambda dt, p=p: self.layout.set_partial(_truncate_partial(p)))
 
         def on_final(f):
             Clock.schedule_once(lambda dt, f=f: self.layout.add_final(f))
 
         def on_error(e):
-            # simple console log for now; could show popup
             print("Transcriber error:", e, file=sys.stderr)
 
         self.transcriber.set_callbacks(on_partial=on_partial, on_final=on_final, on_error=on_error)
 
-        # start transcriber
-        self.transcriber.start()
+        # start transcriber only if auto_start is true
+        if self._auto_start:
+            self.transcriber.start()
 
     def on_stop(self):
         # stop transcriber gracefully
