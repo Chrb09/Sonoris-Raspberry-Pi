@@ -142,7 +142,7 @@ class MainLayout(BoxLayout):
         self._reset_partial()
 
 class TranscriberApp(App):
-    def __init__(self, transcriber: Transcriber, **kwargs):
+    def __init__(self, transcriber: Transcriber, auto_start=True, **kwargs):
         super().__init__(**kwargs)
         self.transcriber = transcriber
         self.layout = None
