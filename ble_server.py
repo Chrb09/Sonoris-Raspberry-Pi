@@ -3,7 +3,7 @@ import asyncio
 import threading
 from bluez_peripheral.gatt.service import Service
 from bluez_peripheral.gatt.characteristic import characteristic, CharacteristicFlags as CharFlags
-from bluez_peripheral.advert import Advertisment
+from bluez_peripheral.advert import Advertisement
 from bluez_peripheral.util import get_message_bus
 
 # UUIDs (troque se quiser)
@@ -49,7 +49,7 @@ async def _ble_main(on_start_cb, on_stop_cb, stop_event: threading.Event):
     svc = ControlService(on_start_cb=on_start_cb, on_stop_cb=on_stop_cb)
     await svc.register(bus)
 
-    advert = Advertisment("SonorisRPi", [SERVICE_UUID], 0, 0)
+    advert = Advertisement("SonorisRPi", [SERVICE_UUID], 0, 0)
     await advert.register(bus)
     print("[BLE] Advertising service:", SERVICE_UUID)
 
