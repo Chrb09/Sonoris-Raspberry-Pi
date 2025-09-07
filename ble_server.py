@@ -1,31 +1,34 @@
 # ble_server.py
+# ble_server_fixed.py (trecho relevante)
 import asyncio
 import threading
 from bluez_peripheral.gatt.service import Service
 from bluez_peripheral.gatt.characteristic import characteristic, CharacteristicFlags as CharFlags
+from bluez_peripheral.gatt.descriptor import descriptor, DescriptorFlags as DescFlags
 from bluez_peripheral.advert import Advertisement
 from bluez_peripheral.util import get_message_bus
 
-# UUIDs (troque se quiser)
 SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0"
 CHAR_UUID    = "12345678-1234-5678-1234-56789abcdef1"
+CCCD_UUID     = "00002902-0000-1000-8000-00805f9b34fb"  # client characteristic config
 
 class ControlService(Service):
     def __init__(self, on_start_cb=None, on_stop_cb=None):
-        super().__init__(SERVICE_UUID.replace('-', ''), True)  # primary service
+        # passe a UUID com hífens
+        super().__init__(SERVICE_UUID, True)
         self._value = b""
         self.on_start_cb = on_start_cb
         self.on_stop_cb = on_stop_cb
-        self._notifying = False
+        self._subscribed = False
 
-    @characteristic(CHAR_UUID.replace('-', ''), CharFlags.READ | CharFlags.WRITE | CharFlags.NOTIFY)
+    @characteristic(CHAR_UUID, CharFlags.READ | CharFlags.WRITE | CharFlags.NOTIFY)
     def control(self, options):
-        # leitura retorna o último valor escrito
+        # leitura -> retorna bytes
         return self._value
 
-    # setter é chamado quando o central escreve na característica
     @control.setter
     def control(self, value, options):
+        # escrita vinda do central (app)
         try:
             txt = bytes(value).decode('utf-8').strip()
         except Exception:
@@ -33,50 +36,47 @@ class ControlService(Service):
         print("[BLE] write received:", txt)
         self._value = value
 
-        # handshake simples: START / STOP
         if txt.upper() == "START":
             if callable(self.on_start_cb):
-                # chamar callback (pode ser thread-safe)
                 self.on_start_cb()
-            self._notifying = True
         elif txt.upper() == "STOP":
             if callable(self.on_stop_cb):
                 self.on_stop_cb()
-            self._notifying = False
 
+    # Descriptor CCCD (0x2902) — expõe a config de notificação
+    @descriptor(CCCD_UUID, DescFlags.READ | DescFlags.WRITE)
+    def cccd(self, options):
+        # valor padrão: notifications desativadas
+        # quando central escreve 0x0001 -> significa subscribe
+        # retornamos o valor atual (guardamos em _subscribed se necessário)
+        return b'\x00\x00'
+
+    # método helper para notificar (se precisar)
+    def notify_value(self, bus, value_bytes):
+        try:
+            # setar valor interno e emitir properties changed via bluez_peripheral
+            self._value = value_bytes
+            self.Notify(self.path, {"Value": self._value})
+        except Exception as e:
+            print("[BLE] erro ao notificar:", e)
+
+# código de advertising (tolerante a assinaturas diferentes)
 async def _ble_main(on_start_cb, on_stop_cb, stop_event: threading.Event):
     bus = await get_message_bus()
     svc = ControlService(on_start_cb=on_start_cb, on_stop_cb=on_stop_cb)
     await svc.register(bus)
 
+    # criar advertisement (tenta um padrão compatível)
     try:
-        # tentativa 1: forma posicional (nome, [services], kwargs)
         advert = Advertisement("SonorisRPi", [SERVICE_UUID], appearance=0, timeout=0, discoverable=True)
-        print("[BLE] Advertisement criado (posicional + kwargs).")
-    except TypeError as e1:
-        print("[BLE] posicional+kwargs falhou:", e1)
-        try:
-            # tentativa 2: forma puramente posicional (nome, [services], appearance, timeout)
-            advert = Advertisement("SonorisRPi", [SERVICE_UUID], 0, 0)
-            print("[BLE] Advertisement criado (posicional simples).")
-        except Exception as e2:
-            print("[BLE] tentativa alternativa falhou:", e2)
-            # tentativa 3: algumas versões antigas usam camelCase -> localName / serviceUUIDs
-            try:
-                advert = Advertisement(localName="SonorisRPi", serviceUUIDs=[SERVICE_UUID], appearance=0, timeout=0)
-                print("[BLE] Advertisement criado (camelCase keywords).")
-            except Exception as e3:
-                print("[BLE] todas as tentativas de criar Advertisement falharam:", e3)
-                raise  # re-levanta para você ver o traceback
-    # finalmente registra:
+    except TypeError:
+        advert = Advertisement("SonorisRPi", [SERVICE_UUID], 0, 0)
     await advert.register(bus)
-    print("[BLE] Advertising service:", SERVICE_UUID)
+    print("[BLE] Advertising:", SERVICE_UUID)
 
-    # fica rodando até stop_event ser setado
     while not stop_event.is_set():
         await asyncio.sleep(0.5)
 
-    # limpar (desregistrar) se necessário
     try:
         await advert.unregister()
     except Exception:
