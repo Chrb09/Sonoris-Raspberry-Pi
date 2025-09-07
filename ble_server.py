@@ -49,7 +49,26 @@ async def _ble_main(on_start_cb, on_stop_cb, stop_event: threading.Event):
     svc = ControlService(on_start_cb=on_start_cb, on_stop_cb=on_stop_cb)
     await svc.register(bus)
 
-    advert = Advertisement("SonorisRPi", [SERVICE_UUID], 0, 0)
+    try:
+        # tentativa 1: forma posicional (nome, [services], kwargs)
+        advert = Advertisement("SonorisRPi", [SERVICE_UUID], appearance=0, timeout=0, discoverable=True)
+        print("[BLE] Advertisement criado (posicional + kwargs).")
+    except TypeError as e1:
+        print("[BLE] posicional+kwargs falhou:", e1)
+        try:
+            # tentativa 2: forma puramente posicional (nome, [services], appearance, timeout)
+            advert = Advertisement("SonorisRPi", [SERVICE_UUID], 0, 0)
+            print("[BLE] Advertisement criado (posicional simples).")
+        except Exception as e2:
+            print("[BLE] tentativa alternativa falhou:", e2)
+            # tentativa 3: algumas versões antigas usam camelCase -> localName / serviceUUIDs
+            try:
+                advert = Advertisement(localName="SonorisRPi", serviceUUIDs=[SERVICE_UUID], appearance=0, timeout=0)
+                print("[BLE] Advertisement criado (camelCase keywords).")
+            except Exception as e3:
+                print("[BLE] todas as tentativas de criar Advertisement falharam:", e3)
+                raise  # re-levanta para você ver o traceback
+    # finalmente registra:
     await advert.register(bus)
     print("[BLE] Advertising service:", SERVICE_UUID)
 
