@@ -13,57 +13,35 @@ CHAR_UUID    = "12345678-1234-5678-1234-56789abcdef1"
 
 class ControlService(Service):
     def __init__(self, on_start_cb=None, on_stop_cb=None):
-        # passe a UUID como string (com hífens está OK)
         super().__init__(SERVICE_UUID, True)
-        self._value = b""
         self.on_start_cb = on_start_cb
         self.on_stop_cb = on_stop_cb
-        self._notifying = False
 
-    @characteristic(CHAR_UUID, CharFlags.READ | CharFlags.WRITE | CharFlags.NOTIFY)
+    # --- INÍCIO DA CORREÇÃO ---
+    # 1. Remova as flags READ e NOTIFY. Deixe apenas WRITE.
+    # 2. Como não há READ, não precisamos mais do getter. A função agora serve apenas para o setter.
+    @characteristic(CHAR_UUID, CharFlags.WRITE)
     def control(self, options):
-        # retorno de leitura: bytes
-        return self._value
+        # Este método getter agora pode ser vazio, pois nunca será chamado sem a flag READ.
+        # Algumas versões da biblioteca podem exigir que ele exista, mas não seja usado.
+        pass
 
     @control.setter
     def control(self, value, options):
-        # escrita vinda do central (app)
+        # A lógica de escrita permanece a mesma.
         try:
-            txt = bytes(value).decode('utf-8').strip()
+            txt = bytes(value).decode('utf-8').strip().upper()
         except Exception:
             txt = ""
-        print("[BLE] write received:", txt)
-        self._value = value
+        
+        print(f"[BLE] Comando recebido: '{txt}'")
 
-        if txt.upper() == "START":
+        if txt == "START":
             if callable(self.on_start_cb):
-                # callback para iniciar transcrição / UI
                 self.on_start_cb()
-            self._notifying = True
-        elif txt.upper() == "STOP":
+        elif txt == "STOP":
             if callable(self.on_stop_cb):
                 self.on_stop_cb()
-            self._notifying = False
-
-    # helper para notificar (quando quiser enviar dados ao cliente)
-    def notify(self, bus, value_bytes):
-        """
-        Atualiza o valor interno e emite PropertiesChanged para notificar clientes.
-        (bluez-peripheral usa o mecanismo DBus — depende da versão da lib.)
-        """
-        try:
-            self._value = bytes(value_bytes)
-            # A forma exata de notificar pode variar pela versão da lib.
-            # Esta chamada tenta usar o helper Notify se disponível:
-            try:
-                # Alguns exemplos usam self.Notify(self.path, {"Value": self._value})
-                # mas a API pode variar; deixamos um print para depuração.
-                self.Notify(self.path, {"Value": self._value})
-            except Exception:
-                # fallback: apenas logue (ou implemente outro método conforme a versão da lib)
-                print("[BLE] notify fallback — valor definido, mas notify explícito falhou")
-        except Exception as e:
-            print("[BLE] erro no notify:", e)
 
 async def _ble_main(on_start_cb, on_stop_cb, stop_event: threading.Event):
     bus = await get_message_bus()
