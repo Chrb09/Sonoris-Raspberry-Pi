@@ -1,10 +1,20 @@
 # main.py
 import json
 import os
-import time
 import threading
+import sys
 
-from ble_server import start_ble_server_in_thread
+# Variável de teste: definir True para pular a conexão BLE e iniciar direto a UI/transcriber.
+# Mude para False em produção.
+SKIP_BLE = True
+
+# tenta importar o BLE server (pode falhar em ambientes sem BLE)
+try:
+    from ble_server import start_ble_server_in_thread
+    BLE_AVAILABLE = True
+except Exception:
+    BLE_AVAILABLE = False
+
 from transcriber import Transcriber
 from ui import TranscriberApp
 
@@ -19,14 +29,13 @@ else:
 # Eventos de sincronização entre threads
 ble_connected_event = threading.Event()
 ble_disconnected_event = threading.Event()
-ble_stop_event = None  # será o stop_event retornado pelo BLE thread
+ble_stop_event = None  # será o stop_event retornado pelo BLE thread (ou criado em modo skip)
 
 def on_ble_start():
     """
     Chamado pela thread BLE quando o app no celular escreveu "START".
     """
     print("[MAIN] BLE START recebido")
-    # sinaliza que podemos iniciar UI/transcriber
     ble_connected_event.set()
     ble_disconnected_event.clear()
 
@@ -38,20 +47,29 @@ def on_ble_stop():
     print("[MAIN] BLE STOP recebido")
     ble_disconnected_event.set()
     ble_connected_event.clear()
-    # se a UI estiver rodando, nós a encerramos (a lógica para encerrar a UI fica abaixo)
 
 def run():
     global ble_stop_event
 
-    # inicia o BLE server numa thread (vai chamar on_ble_start/stop)
-    ble_stop_event, _ = start_ble_server_in_thread(on_start_cb=on_ble_start, on_stop_cb=on_ble_stop)
+    if SKIP_BLE:
+        print("[MAIN] MODO DE TESTE ATIVADO: pulando BLE e iniciando UI/transcriber diretamente.")
+        # criar um evento para evitar None no finally e setar conexão como já estabelecida
+        ble_stop_event = threading.Event()
+        ble_connected_event.set()
+    else:
+        # inicia o BLE server numa thread (vai chamar on_ble_start/stop) se disponível
+        if BLE_AVAILABLE:
+            ble_stop_event, _ = start_ble_server_in_thread(on_start_cb=on_ble_start, on_stop_cb=on_ble_stop)
+            print("Aguardando conexão BLE. Abra o app e envie 'START' para iniciar.")
+        else:
+            print("[MAIN] BLE não disponível/encontrado. Ative SKIP_BLE=True para pular o BLE em ambiente de teste.")
+            ble_stop_event = threading.Event()
 
-    print("Aguardando conexão BLE. Abra o app e envie 'START' para iniciar.")
     try:
         while True:
-            # espera até o celular enviar "START"
+            # espera até o celular enviar "START" (ou até que SKIP_BLE já tenha setado o evento)
             ble_connected_event.wait()
-            print("[MAIN] Conexão detectada: iniciando Transcriber + UI")
+            print("[MAIN] Conexão detectada (ou modo teste): iniciando Transcriber + UI")
 
             # cria instâncias
             transcriber = Transcriber(cfg)
@@ -65,7 +83,6 @@ def run():
                 ble_disconnected_event.wait()
                 print("[MAIN] watcher: BLE desconectado, parando app...")
                 try:
-                    # chamar stop de forma segura na thread principal do Kivy
                     from kivy.clock import Clock
                     Clock.schedule_once(lambda dt: app.stop(), 0)
                 except Exception as e:
@@ -83,16 +100,25 @@ def run():
             except Exception:
                 pass
 
-            # limpa eventos e volta a aguardar nova conexão
+            # --- AQUI: comportamento após fechar a UI ---
+            if SKIP_BLE:
+                # modo de teste: encerrar completamente (não reiniciar)
+                print("[MAIN] SKIP_BLE ativo — encerrando execucao apos sessao de teste.")
+                break
+
+            # Em execução normal com BLE, limpa eventos e volta a aguardar nova conexão
             ble_connected_event.clear()
             ble_disconnected_event.clear()
             print("[MAIN] Sessão finalizada. Voltando a aguardar conexão BLE...")
     except KeyboardInterrupt:
         print("Encerrando por KeyboardInterrupt...")
     finally:
-        # solicitar parada do BLE thread
+        # solicitar parada do BLE thread (se existir)
         if ble_stop_event:
-            ble_stop_event.set()
+            try:
+                ble_stop_event.set()
+            except Exception:
+                pass
 
 if __name__ == "__main__":
     run()
