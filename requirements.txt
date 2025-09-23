@@ -2,3 +2,4 @@ numpy
 vosk
 sounddevice
 webrtcvad
+kivy

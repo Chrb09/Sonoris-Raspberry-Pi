@@ -23,12 +23,12 @@ if os.path.exists(CONFIG_PATH):
 else:
     cfg = {}
 
-# UI config (reads from config.json)
+# configurações de UI do config.json
 FONT_NAME = cfg.get("fonte", None)
 FONT_SIZE_PARTIAL = cfg.get("tamanho_parcial", 28)
 FONT_SIZE_HISTORY = cfg.get("tamanho_historico", 20)
-BACKGROUND_COLOR = tuple(cfg.get("cor_fundo", [0,0,0,1]))
-TEXT_COLOR = tuple(cfg.get("cor_texto", [1,1,1,1]))
+BACKGROUND_COLOR = tuple(cfg.get("color_background500", [31, 31, 31, 1]))
+TEXT_COLOR = tuple(cfg.get("color_blue500", [255, 255, 255, 1]))
 MAX_PARTIAL_CHARS = int(cfg.get("max_partial_chars", 240))
 PARTIAL_UPDATE_MIN_MS = int(cfg.get("partial_update_min_ms", 80))
 HISTORY_MAX_LINES = int(cfg.get("history_max_lines", 200))
@@ -141,6 +141,7 @@ class MainLayout(BoxLayout):
         self.history.clear_all()
         self._reset_partial()
 
+# main app do kivy
 class TranscriberApp(App):
     def __init__(self, transcriber: Transcriber, auto_start=True, **kwargs):
         super().__init__(**kwargs)
@@ -148,19 +149,22 @@ class TranscriberApp(App):
         self.layout = None
         self._auto_start = auto_start
 
+    # nome do aplicativo
     def build(self):
         self.title = "Sonoris - Transcrição"
         self.layout = MainLayout(self.transcriber)
         return self.layout
 
     def on_start(self):
-        # register callbacks (wrap to schedule on UI thread)
+        # atualiza o texto parcial
         def on_partial(p):
             Clock.schedule_once(lambda dt, p=p: self.layout.set_partial(_truncate_partial(p)))
 
+        # adiciona linha finalizada no histórico
         def on_final(f):
             Clock.schedule_once(lambda dt, f=f: self.layout.add_final(f))
 
+        # mostra erro no terminal
         def on_error(e):
             print("Transcriber error:", e, file=sys.stderr)
 
