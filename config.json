@@ -12,7 +12,7 @@
   "partial_reset_ms": 3000,
 
   "_comment": "Config principal do dispositivo Sonoris. Ajusta fonte, tamanhos e cores.",
-  "fonte": "InterRegular",
+  "fonte": "Inter",
   "tamanho_parcial": 28,
   "tamanho_historico": 20,
   "color_background500": [31, 31, 31, 1],
