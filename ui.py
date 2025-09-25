@@ -12,10 +12,13 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from widgets import IconButton, Toolbar, TranscriptHistory
 from kivy.uix.anchorlayout import AnchorLayout
 
+from widgets import IconButton, Toolbar, TranscriptHistory
+from config_ui import FONT_SIZE_PARTIAL, FONT_SIZE_HISTORY, HISTORY_MAX_LINES, BACKGROUND_COLOR, TEXT_COLOR
+
 from transcriber import Transcriber
+
 
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
@@ -148,7 +151,8 @@ class MainLayout(BoxLayout):
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
         plus_path = os.path.join(icons_dir, "plus.png")
         resume_path = os.path.join(icons_dir, "resume.png")
-        
+        pause_path = os.path.join(icons_dir, "pause.png")
+
         # botão nova conversa    
         plus_btn = IconButton(icon_src=plus_path, text="Nova conversa", size=(158,86))
         plus_btn.name = "btn_plus"
@@ -159,14 +163,21 @@ class MainLayout(BoxLayout):
         resume_btn = IconButton(icon_src=resume_path, text="Retomar", size=(158,86))
         resume_btn.name = "btn_resume"
         resume_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
+        resume_btn.bind(on_release=lambda inst: self.transcriber.start() if self.transcriber else None)
+        
+        # botão pausar conversa
+        pause_btn = IconButton(icon_src=pause_path, text="Pausar", size=(158,86))
+        pause_btn.name = "btn_pause"
+        pause_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
+        pause_btn.bind(on_release=lambda inst: self.transcriber.stop() if self.transcriber else None) 
         
         # agrupa os botões
         group = BoxLayout(orientation='horizontal', size_hint=(None, 1), spacing=16)
         group.add_widget(plus_btn)
-        group.add_widget(resume_btn)
+        group.add_widget(pause_btn)
 
         # centraliza o grupo
-        anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(3, 1)) # o plus_btn ocupa 3/4 da largura e o resume_btn ocupa 1/4
+        anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1)) # o plus_btn ocupa 1/2 da largura e o resume_btn ocupa 1/2
         anchor.add_widget(group)
         toolbar.add_widget(anchor)
 

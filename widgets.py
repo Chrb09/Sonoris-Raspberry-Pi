@@ -7,6 +7,8 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.properties import StringProperty, ListProperty, NumericProperty
 from kivy.uix.gridlayout import GridLayout
 
+from config_ui import FONT_SIZE_HISTORY, HISTORY_MAX_LINES, TEXT_COLOR
+
 # ------------------------------
 # IconButton
 # ------------------------------
