@@ -19,7 +19,6 @@ from config_ui import FONT_SIZE_PARTIAL, FONT_SIZE_HISTORY, HISTORY_MAX_LINES, B
 
 from transcriber import Transcriber
 
-
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
 # TODO melhorar o design
@@ -87,7 +86,7 @@ def parse_color(raw, default=(0,0,0,1)):
 
 # configurações de UI (config.json)
 FONT_NAME = cfg.get("fonte", None)
-FONT_SIZE_PARTIAL = cfg.get("tamanho_parcial", 28)
+
 FONT_SIZE_HISTORY = cfg.get("tamanho_historico", 20)
 BACKGROUND_COLOR = parse_color(cfg.get("color_background500", None), default=(0,0,0,1))
 TEXT_COLOR = parse_color(cfg.get("color_white100", None), default=(1,1,1,1))
@@ -159,22 +158,20 @@ class MainLayout(BoxLayout):
         plus_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
         plus_btn.bind(on_release=self._on_clear_history)
 
-        # botão retomar conversa
-        resume_btn = IconButton(icon_src=resume_path, text="Retomar", size=(158,86))
-        resume_btn.name = "btn_resume"
-        resume_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
-        resume_btn.bind(on_release=lambda inst: self.transcriber.start() if self.transcriber else None)
-        
-        # botão pausar conversa
-        pause_btn = IconButton(icon_src=pause_path, text="Pausar", size=(158,86))
-        pause_btn.name = "btn_pause"
-        pause_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
-        pause_btn.bind(on_release=lambda inst: self.transcriber.stop() if self.transcriber else None) 
+        # botão toggle (pausar <-> retomar)
+        self.is_paused = False
+        self.pause_icon = pause_path
+        self.resume_icon = resume_path
+
+        # botão toggle inicia como 'Pausar'
+        self.toggle_btn = IconButton(icon_src=self.pause_icon, text="Pausar", size=(158,86))
+        self.toggle_btn.name = "btn_pause"
+        self.toggle_btn.bind(on_release=self._toggle_pause_resume) # chama o método de toggle que faz tudo
         
         # agrupa os botões
         group = BoxLayout(orientation='horizontal', size_hint=(None, 1), spacing=16)
         group.add_widget(plus_btn)
-        group.add_widget(pause_btn)
+        group.add_widget(self.toggle_btn)
 
         # centraliza o grupo
         anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1)) # o plus_btn ocupa 1/2 da largura e o resume_btn ocupa 1/2
@@ -187,6 +184,64 @@ class MainLayout(BoxLayout):
 
     def _update_partial_text_size(self, inst, val):
         inst.text_size = (inst.width - 20, inst.height)
+
+    # botão de toggle pausar/retomar
+    def _toggle_pause_resume(self, instance):
+        """
+        Alterna entre estado pausado e rodando:
+        - se estava rodando -> chama transcriber.stop(), muda botão para 'Retomar'
+        - se estava pausado -> chama transcriber.start(), muda botão para 'Pausar'
+        """
+
+        # inicializa variável se não existir
+        if not hasattr(self, 'is_paused'):
+            self.is_paused = False
+
+        # -> pausar agora
+        if not self.is_paused:
+            print("pausado")
+            try:
+                if self.transcriber:
+                    self.transcriber.stop()
+            except Exception as e:
+                print("Erro ao pausar transcriber:", e)
+
+            # atualiza visual do botão para 'Retomar'
+            try:
+                instance.icon_src = self.resume_icon
+            except Exception:
+                pass
+            # fallback direto na imagem interna (caso IconButton não exponha binding)
+            try:
+                instance._image.source = self.resume_icon
+            except Exception:
+                pass
+
+            instance.text = "Retomar"
+            instance.name = "btn_resume"
+            self.is_paused = True
+        else:
+            # -> retomar agora
+            print("retomar")
+            try:
+                if self.transcriber:
+                    self.transcriber.start()
+            except Exception as e:
+                print("Erro ao iniciar transcriber:", e)
+
+            # volta visual para 'Pausar'
+            try:
+                instance.icon_src = self.pause_icon
+            except Exception:
+                pass
+            try:
+                instance._image.source = self.pause_icon
+            except Exception:
+                pass
+
+            instance.text = "Pausar"
+            instance.name = "btn_pause"
+            self.is_paused = False
 
     # UI-callable functions (schedule from callbacks)
     def add_final(self, text):
