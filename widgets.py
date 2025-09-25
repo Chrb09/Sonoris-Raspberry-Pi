@@ -90,7 +90,7 @@ class IconButton(ButtonBehavior, BoxLayout):
 # BoxLayout com fundo desenhado com canvas
 class Toolbar(BoxLayout):
     def __init__(self, bg_color=(0.12, 0.12, 0.12, 1.0), radius=0, **kwargs):
-        super().__init__(orientation='horizontal', size_hint=(1, None), **kwargs)
+        super().__init__(orientation='horizontal', size_hint=(1, None), padding=10, **kwargs)
         # é esperado que chamem toolbar.height externamente
         with self.canvas.before:
             self._bg_color_instr = Color(*bg_color)

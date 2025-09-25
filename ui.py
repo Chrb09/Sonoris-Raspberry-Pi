@@ -1,7 +1,8 @@
 # ui.py
 import json
 import os
-import sys   
+import sys
+from tokenize import group   
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -12,10 +13,13 @@ from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from widgets import IconButton, Toolbar, TranscriptHistory
+from kivy.uix.anchorlayout import AnchorLayout
 
 from transcriber import Transcriber
 
 # TODO deixar o botão funcional
+# TODO otimizar o codigo
+# TODO melhorar o design
 
 BASE_DIR = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -132,15 +136,22 @@ class MainLayout(BoxLayout):
         plus_btn.name = "btn_plus"
         plus_btn.bind(on_release=lambda inst: print("clicou", inst.name))
         plus_btn.bind(on_release=self._on_clear_history)
-        toolbar.add_widget(plus_btn)
 
         # botão retomar conversa
         resume_btn = IconButton(icon_src=resume_path, text="Retomar", size=(158,86))
         resume_btn.name = "btn_resume"
         resume_btn.bind(on_release=lambda inst: print("clicou", inst.name))
         resume_btn.bind(on_release=self._on_clear_history)
-        toolbar.add_widget(resume_btn)
         
+        group = BoxLayout(orientation='horizontal', size_hint=(None, 1), spacing=16)
+        group.add_widget(IconButton(icon_src=plus_path, text="Nova conversa", size=(158,86)))
+        group.add_widget(IconButton(icon_src=resume_path, text="Retomar", size=(158,86)))
+
+        # centraliza grupo
+        anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1))
+        anchor.add_widget(group)
+        toolbar.add_widget(anchor)
+
         # espaço flexível
         toolbar.add_widget(Label(text="", size_hint=(1,1)))
         self.add_widget(toolbar)
