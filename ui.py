@@ -123,46 +123,13 @@ class MainLayout(BoxLayout):
     def __init__(self, transcriber: Transcriber, **kwargs):
         super().__init__(orientation='vertical', padding=0, spacing=6, **kwargs)
         
-        toolbar_color = parse_color(cfg.get("color_background300", None), default=(0.14,0.14,0.14,1))
-        toolbar = Toolbar(bg_color=toolbar_color, height=132)
-        
-        # botão texto (manter limpar histórico)
-        icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
-        plus_path = os.path.join(icons_dir, "plus.png")
-        resume_path = os.path.join(icons_dir, "resume.png")
-        
-        # botão nova conversa    
-        plus_btn = IconButton(icon_src=plus_path, text="Nova conversa", size=(158,86))
-        plus_btn.name = "btn_plus"
-        plus_btn.bind(on_release=lambda inst: print("clicou", inst.name))
-        plus_btn.bind(on_release=self._on_clear_history)
-
-        # botão retomar conversa
-        resume_btn = IconButton(icon_src=resume_path, text="Retomar", size=(158,86))
-        resume_btn.name = "btn_resume"
-        resume_btn.bind(on_release=lambda inst: print("clicou", inst.name))
-        resume_btn.bind(on_release=self._on_clear_history)
-        
-        group = BoxLayout(orientation='horizontal', size_hint=(None, 1), spacing=16)
-        group.add_widget(IconButton(icon_src=plus_path, text="Nova conversa", size=(158,86)))
-        group.add_widget(IconButton(icon_src=resume_path, text="Retomar", size=(158,86)))
-
-        # centraliza grupo
-        anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1))
-        anchor.add_widget(group)
-        toolbar.add_widget(anchor)
-
-        # espaço flexível
-        toolbar.add_widget(Label(text="", size_hint=(1,1)))
-        self.add_widget(toolbar)
-
-        # history
+        # histórico (scrollable)
         self.scroll = ScrollView(size_hint=(1, 0.65))
         self.history = TranscriptHistory()
         self.scroll.add_widget(self.history)
         self.add_widget(self.scroll)
 
-        # partial label
+        # texto parcial
         self.partial_label = Label(text="Aguardando...", size_hint=(1, 0.25), halign='center', valign='middle',
                                    text_size=(None, None), font_size=FONT_SIZE_PARTIAL, color=TEXT_COLOR)
         self.partial_label.bind(size=self._update_partial_text_size)
@@ -172,6 +139,40 @@ class MainLayout(BoxLayout):
 
         # keep transcriber reference so we can start/stop from UI if needed
         self.transcriber = transcriber
+
+        # toolbar
+        toolbar_color = parse_color(cfg.get("color_background300", None), default=(0.14,0.14,0.14,1))
+        toolbar = Toolbar(bg_color=toolbar_color, height=132)
+        
+        # botões
+        icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
+        plus_path = os.path.join(icons_dir, "plus.png")
+        resume_path = os.path.join(icons_dir, "resume.png")
+        
+        # botão nova conversa    
+        plus_btn = IconButton(icon_src=plus_path, text="Nova conversa", size=(158,86))
+        plus_btn.name = "btn_plus"
+        plus_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
+        plus_btn.bind(on_release=self._on_clear_history)
+
+        # botão retomar conversa
+        resume_btn = IconButton(icon_src=resume_path, text="Retomar", size=(158,86))
+        resume_btn.name = "btn_resume"
+        resume_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
+        
+        # agrupa os botões
+        group = BoxLayout(orientation='horizontal', size_hint=(None, 1), spacing=16)
+        group.add_widget(plus_btn)
+        group.add_widget(resume_btn)
+
+        # centraliza o grupo
+        anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(3, 1)) # o plus_btn ocupa 3/4 da largura e o resume_btn ocupa 1/4
+        anchor.add_widget(group)
+        toolbar.add_widget(anchor)
+
+        # espaço flexível
+        toolbar.add_widget(Label(text="", size_hint=(1,1)))
+        self.add_widget(toolbar)
 
     def _update_partial_text_size(self, inst, val):
         inst.text_size = (inst.width - 20, inst.height)

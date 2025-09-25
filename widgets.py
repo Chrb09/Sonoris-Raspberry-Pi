@@ -93,8 +93,8 @@ class Toolbar(BoxLayout):
         super().__init__(orientation='horizontal', size_hint=(1, None), padding=10, **kwargs)
         # é esperado que chamem toolbar.height externamente
         with self.canvas.before:
-            self._bg_color_instr = Color(*bg_color)
-            self._bg_rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[radius])
+            self._bg_color_instr = Color(*bg_color) # cor de fundo
+            self._bg_rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[radius]) 
         self.bind(pos=self._update_rect, size=self._update_rect)
 
     def _update_rect(self, *args):
