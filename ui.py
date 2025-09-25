@@ -22,6 +22,7 @@ from transcriber import Transcriber
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
 # TODO melhorar o design
+# TODO arrumar bug do botão direito que fica vermelho
 
 BASE_DIR = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -86,7 +87,6 @@ def parse_color(raw, default=(0,0,0,1)):
 
 # configurações de UI (config.json)
 FONT_NAME = cfg.get("fonte", None)
-
 FONT_SIZE_HISTORY = cfg.get("tamanho_historico", 20)
 BACKGROUND_COLOR = parse_color(cfg.get("color_background500", None), default=(0,0,0,1))
 TEXT_COLOR = parse_color(cfg.get("color_white100", None), default=(1,1,1,1))
@@ -126,7 +126,7 @@ class MainLayout(BoxLayout):
         super().__init__(orientation='vertical', padding=0, spacing=6, **kwargs)
         
         # histórico (scrollable)
-        self.scroll = ScrollView(size_hint=(1, 0.65))
+        self.scroll = ScrollView(size_hint=(1, 1))
         self.history = TranscriptHistory()
         self.scroll.add_widget(self.history)
         self.add_widget(self.scroll)
@@ -148,15 +148,9 @@ class MainLayout(BoxLayout):
         
         # botões
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
-        plus_path = os.path.join(icons_dir, "plus.png")
+        plus_path = os.path.join(icons_dir, "plus.png") 
         resume_path = os.path.join(icons_dir, "resume.png")
         pause_path = os.path.join(icons_dir, "pause.png")
-
-        # botão nova conversa    
-        plus_btn = IconButton(icon_src=plus_path, text="Nova conversa", size=(158,86))
-        plus_btn.name = "btn_plus"
-        plus_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
-        plus_btn.bind(on_release=self._on_clear_history)
 
         # botão toggle (pausar <-> retomar)
         self.is_paused = False
@@ -164,14 +158,20 @@ class MainLayout(BoxLayout):
         self.resume_icon = resume_path
 
         # botão toggle inicia como 'Pausar'
-        self.toggle_btn = IconButton(icon_src=self.pause_icon, text="Pausar", size=(158,86))
+        self.toggle_btn = IconButton(icon_src=self.pause_icon, text="Pausar", size=(150,86))
         self.toggle_btn.name = "btn_pause"
         self.toggle_btn.bind(on_release=self._toggle_pause_resume) # chama o método de toggle que faz tudo
+
+        # botão nova conversa    
+        plus_btn = IconButton(icon_src=plus_path, text="Nova conversa", size=(150,86))
+        plus_btn.name = "btn_plus"
+        plus_btn.bind(on_release=lambda inst: print("clicou", inst.name)) # TODO funcionalidade
+        plus_btn.bind(on_release=self._on_clear_history)
         
         # agrupa os botões
         group = BoxLayout(orientation='horizontal', size_hint=(None, 1), spacing=16)
-        group.add_widget(plus_btn)
         group.add_widget(self.toggle_btn)
+        group.add_widget(plus_btn)
 
         # centraliza o grupo
         anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1)) # o plus_btn ocupa 1/2 da largura e o resume_btn ocupa 1/2
@@ -267,10 +267,12 @@ class MainLayout(BoxLayout):
         if txt and txt.lower() != "aguardando..." and PARTIAL_RESET_MS > 0:
             self._partial_reset_ev = Clock.schedule_once(lambda dt: self._reset_partial(), PARTIAL_RESET_MS / 1000.0)
 
+    # reset do texto parcial
     def _reset_partial(self):
         self._partial_reset_ev = None
         self.partial_label.text = "Aguardando..."
 
+    # limpa o histórico e reseta o parcial
     def _on_clear_history(self, instance):
         self.history.clear_all()
         self._reset_partial()
