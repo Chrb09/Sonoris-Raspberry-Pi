@@ -14,6 +14,8 @@ from transcriber import Transcriber
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
 # TODO melhorar o design
+# TODO adicionar todas as imagens dos botões
+# TODO adicionar os widgets
 
 # ------------------------------
 # Configurações Globais do Kivy
