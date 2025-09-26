@@ -50,10 +50,6 @@ class MainLayout(BoxLayout):
     def __init__(self, transcriber: Transcriber, **kwargs):
         super().__init__(orientation='vertical', padding=0, spacing=6, **kwargs)
 
-        # label de status TODO fazer funcionar
-        label_hello = Label(text="Transcrição de Voz Sonoris")
-        self.add_widget(label_hello)
-
 # main app do kivy
 class TranscriberApp(App):
     def __init__(self, transcriber: Transcriber, auto_start=True, **kwargs):
