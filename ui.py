@@ -65,12 +65,29 @@ print("------------------------------\n")
 # layout principal
 class MainLayout(BoxLayout):
     def __init__(self, transcriber: Transcriber, **kwargs):
-        super().__init__(orientation='vertical', padding=0, spacing=6, **kwargs)
+        super().__init__(orientation='vertical', **kwargs)
 
         # toolbar
         toolbar = Toolbar(bg_color=TOOLBAR_COLOR, height=132)
 
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
+        plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]', size=(158,86))
+        pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]', size=(158,86))
+
+        plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
+        pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade
+
+        button_group = BoxLayout(orientation='horizontal', size_hint=(None, None), spacing=18)
+        button_group.width = plus_btn.width + pause_btn.width + 18 # largura total + espaçamento
+        button_group.height = max(plus_btn.height, pause_btn.height) # altura máxima
+ 
+        button_group.add_widget(plus_btn)
+        button_group.add_widget(pause_btn)
+
+        # centraliza o grupo
+        anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1))
+        anchor.add_widget(button_group)
+        toolbar.add_widget(anchor) # adiciona o grupo à toolbar
 
         self.add_widget(toolbar)
         

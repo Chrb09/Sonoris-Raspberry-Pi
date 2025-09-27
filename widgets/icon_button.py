@@ -48,7 +48,7 @@ class IconButton(ButtonBehavior, BoxLayout):
                             allow_stretch=True, keep_ratio=True)
         # label (rótulo)
         self._label = Label(text=self.text, size_hint=(1, 0.34),
-                            font_size=self.font_size, halign='center', valign='middle')
+                            font_size=self.font_size, markup=True, halign='center', valign='middle')
         self._label.bind(size=lambda inst, val: inst.setter('text_size')(inst, val))
 
         # fonte global se existir (FONT_NAME)
@@ -71,6 +71,8 @@ class IconButton(ButtonBehavior, BoxLayout):
         self._bg_rect.pos = self.pos
         self._bg_rect.size = self.size
 
+    # TODO ao clicar deve mudar a imagem, n o fundo
+    
     # atualiza cor de fundo
     def _update_bg(self, *args):
         # por padrão usa bg_color; quando pressionado, on_press muda instrucao
