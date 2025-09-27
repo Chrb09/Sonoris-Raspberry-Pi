@@ -71,8 +71,8 @@ class MainLayout(BoxLayout):
         toolbar = Toolbar(bg_color=TOOLBAR_COLOR, height=132)
 
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
-        plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]', size=(158,86))
-        pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]', size=(158,86))
+        plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
+        pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]')
 
         plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
         pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade

@@ -30,7 +30,7 @@ class IconButton(ButtonBehavior, BoxLayout):
     name = StringProperty('') 
 
     # construtor
-    def __init__(self, icon_src='', text='', size=(72, 72), **kwargs):
+    def __init__(self, icon_src='', text='', size=(158,86), **kwargs):
         super().__init__(orientation='vertical', size_hint=(None, None), **kwargs)
         self.size = size
         self.icon_src = icon_src
