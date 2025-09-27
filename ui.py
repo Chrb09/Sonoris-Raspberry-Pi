@@ -68,8 +68,7 @@ class MainLayout(BoxLayout):
         super().__init__(orientation='vertical', padding=0, spacing=6, **kwargs)
 
         # toolbar
-        toolbar_color = parse_color(cfg.get("color_gray", None), default=(0.168, 0.168, 0.168, 1))
-        toolbar = Toolbar(bg_color=toolbar_color, height=132)
+        toolbar = Toolbar(bg_color=TOOLBAR_COLOR, height=132)
 
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
 
