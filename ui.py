@@ -10,14 +10,17 @@ from kivy.core.text import LabelBase
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 
-from utils.colors import parse_color
 from transcriber import Transcriber
+from widgets.toolbar import Toolbar
+from widgets.icon_button import IconButton
+from utils.colors import parse_color
 
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
 # TODO melhorar o design
 # TODO adicionar todas as imagens dos botões
 # TODO adicionar os widgets
+# TODO consertar o erro do parse_color que não está retornando a cor correta
 
 # ------------------------------
 # Configurações Globais do Kivy
@@ -42,42 +45,18 @@ TOOLBAR_COLOR = parse_color(cfg.get("color_gray300", None), default=(0.168, 0.16
 if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf")):
     LabelBase.register(name=FONT_NAME, fn_regular=os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf"))
 
-# teste de cor de fundo da janela
-print("DEBUG: BACKGROUND_COLOR =", BACKGROUND_COLOR, type(BACKGROUND_COLOR))
 Window.clearcolor = BACKGROUND_COLOR
 
-class Toolbar(AnchorLayout):
-    def __init__(self, items=None, **kwargs):
-        super().__init__(**kwargs)
-        self.size_hint_y = None # altura fixa
-        self.height = 100 # altura da toolbar
-        self.anchor_x = 'center'
-        self.anchor_y = 'bottom'
-        
-         # fundo da toolbar com canvas.before
-        with self.canvas.before:
-            Color(*TOOLBAR_COLOR)
-            self.rect = Rectangle(pos=self.pos, size=self.size)
+# ------------------------------
+# Testes de Configuração
+# ------------------------------
 
-        self.bind(pos=self._update_rect, size=self._update_rect)
-        
-        # container horizontal para os itens
-        container = BoxLayout(orientation='horizontal', spacing=10, padding=10, size_hint=(None, None))
-        container.height = self.height
+print("\nTESTE DE CONFIGURAÇÕES DE UI \n------------------------------")
 
-        # adiciona os itens se houver
-        if items:
-            for item in items:
-                container.add_widget(item)
+print("DEBUG: BACKGROUND_COLOR =", BACKGROUND_COLOR, type(BACKGROUND_COLOR)) # teste de cor de fundo da janela
+print("DEBUG: TOOLBAR_COLOR =", TOOLBAR_COLOR, type(TOOLBAR_COLOR)) # teste de cor da toolbar
 
-        # ajusta a largura do container baseado nos filhos
-        container.width = sum([child.width for child in container.children]) + container.spacing * (len(container.children)-1)
-        self.add_widget(container)
-
-    # atualiza o retângulo do fundo quando a posição ou tamanho mudar
-    def _update_rect(self, *args):
-        self.rect.pos = self.pos
-        self.rect.size = self.size
+print("------------------------------\n")
 
 # ------------------------------
 # Widgets e Layouts
@@ -88,13 +67,14 @@ class MainLayout(BoxLayout):
     def __init__(self, transcriber: Transcriber, **kwargs):
         super().__init__(orientation='vertical', padding=0, spacing=6, **kwargs)
 
-        toolbar = Toolbar(items=[
-            Button(text="Pause", size_hint=(None, 1), width=80),
-            Button(text="Resume", size_hint=(None, 1), width=80),
-            ])
+        # toolbar
+        toolbar_color = parse_color(cfg.get("color_gray", None), default=(0.168, 0.168, 0.168, 1))
+        toolbar = Toolbar(bg_color=toolbar_color, height=132)
+
+        icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
+
         self.add_widget(toolbar)
         
-
 # main app do kivy
 class TranscriberApp(App):
     def __init__(self, transcriber: Transcriber, auto_start=True, **kwargs):

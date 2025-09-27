@@ -20,19 +20,18 @@ def parse_color(value, default=(0,0,0,1)):
         vals = list(value)
         if len(vals) == 3:
             vals.append(1)
-        # se valores inteiros maiores que 1 -> normaliza
-        if any(isinstance(v, (int,)) and v > 1 for v in vals) or any((isinstance(v, float) and v > 1.0) for v in vals):
-            try:
-                vals = [float(v) / 255.0 for v in vals]
-            except Exception:
-                return default
-        vals = [float(v) for v in vals]
-        return tuple(vals[:4])
+        # normaliza cada componente separadamente
+        norm = []
+        for v in vals[:4]:
+            if isinstance(v, int) or (isinstance(v, float) and v > 1.0):
+                norm.append(float(v) / 255.0)
+            else:
+                norm.append(float(v))
+        return tuple(norm)
 
     # string hex
     if isinstance(value, str):
         value = value.strip()
-        # hex
         if value.startswith('#'):
             hexv = value[1:]
             if len(hexv) == 6:
@@ -49,25 +48,28 @@ def parse_color(value, default=(0,0,0,1)):
                 return default
             return (r/255.0, g/255.0, b/255.0, a/255.0)
 
-        # rgba() or rgb()
+        # rgba() ou rgb()
         m = re.match(r'rgba?\s*\(\s*([^\)]+)\)', value, re.I)
         if m:
             parts = [p.strip() for p in m.group(1).split(',')]
             try:
                 nums = []
-                for p in parts:
+                for i, p in enumerate(parts):
                     if '%' in p:
                         nums.append(float(p.strip('%')) * 2.55)  # percent -> 0-255
                     else:
                         nums.append(float(p))
                 if len(nums) == 3:
                     nums.append(1.0)
-                # se alpha está em 0..1, ok; se alfa >1 assumimos 0-255
-                if nums and nums[0] > 1:
-                    nums = [n / 255.0 for n in nums]
-                return tuple(nums[:4])
+                # normaliza cada canal se >1
+                norm = []
+                for n in nums[:4]:
+                    if n > 1:
+                        norm.append(n/255.0)
+                    else:
+                        norm.append(n)
+                return tuple(norm)
             except Exception:
                 return default
 
-    # fallback
     return default
