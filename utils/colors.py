@@ -1,8 +1,6 @@
 # colors.py
 # funções para manipulação de cores
 
-from utils.helpers import _clamp
-
 # converte várias representações de cor para RGBA (0-1 floats)
 import re
 
