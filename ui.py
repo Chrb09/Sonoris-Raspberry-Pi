@@ -5,12 +5,11 @@ from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
-from kivy.graphics import Color, Rectangle
+from kivy.metrics import dp
 from kivy.core.text import LabelBase
-from kivy.uix.label import Label
-from kivy.uix.button import Button
 
 from transcriber import Transcriber
+from widgets.divider import Divider
 from widgets.toolbar import Toolbar
 from widgets.icon_button import IconButton
 from utils.colors import parse_color
@@ -68,8 +67,12 @@ class MainLayout(BoxLayout):
         super().__init__(orientation='vertical', **kwargs)
 
         # toolbar
-        toolbar = Toolbar(bg_color=TOOLBAR_COLOR, height=132)
-
+        toolbar = Toolbar(orientation='vertical', bg_color=TOOLBAR_COLOR, height=132, min_height=98, max_height=132)
+        
+        # divider para redimensionar a toolbar
+        divider = Divider(orientation='horizontal', divider_color=TEXT_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height, size_hint_y=None)
+        toolbar.add_widget(divider)
+        
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
         plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
         pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]')

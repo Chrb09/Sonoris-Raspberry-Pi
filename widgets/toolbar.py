@@ -1,20 +1,30 @@
 # widgets/toolbar.py
 from kivy.uix.boxlayout import BoxLayout
 from kivy.graphics import Color, Rectangle
+from kivy.metrics import dp
+from kivy.properties import NumericProperty
 
-# ------------------------------
-# Toolbar
-# ------------------------------
-
-# BoxLayout com fundo desenhado com canvas
 class Toolbar(BoxLayout):
-    def __init__(self, bg_color=(0.168, 0.168, 0.168, 1), **kwargs):
-        super().__init__(orientation='horizontal', size_hint=(1, None), padding=10, **kwargs)
+    # limites padrão (podem ser sobrescritos no __init__)
+    min_height = NumericProperty(dp(80))
+    max_height = NumericProperty(dp(400))
 
-        # desenha fundo com RoundedRectangle
+    def __init__(self, bg_color=(0.168, 0.168, 0.168, 1), min_height=None, max_height=None, **kwargs):
+        # a toolbar precisa ter size_hint_y=None para podermos controlar height diretamente
+        kwargs.setdefault('orientation', 'horizontal')
+        kwargs.setdefault('size_hint', (1, None))
+        kwargs.setdefault('padding', 10)
+        super().__init__(**kwargs)
+
+        if min_height is not None:
+            self.min_height = min_height
+        if max_height is not None:
+            self.max_height = max_height
+
+        # desenha fundo com Rectangle
         with self.canvas.before:
-            self._bg_color_instr = Color(*bg_color) # cor de fundo
-            self._bg_rect = Rectangle(pos=self.pos, size=self.size) 
+            self._bg_color_instr = Color(*bg_color)
+            self._bg_rect = Rectangle(pos=self.pos, size=self.size)
 
         self.bind(pos=self._update_rect, size=self._update_rect)
 
