@@ -7,7 +7,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.metrics import dp
 from kivy.core.text import LabelBase
-
+from kivy.graphics import Color, Line
 from transcriber import Transcriber
 from widgets.divider import Divider
 from widgets.toolbar import Toolbar
@@ -37,7 +37,7 @@ else:
 # configurações de UI (config.json)
 FONT_NAME = cfg.get("fonte", None) 
 TEXT_COLOR = parse_color(cfg.get("color_background", None), default=(1,1,1,1))
-BACKGROUND_COLOR = parse_color(cfg.get("color_background", None), default=(0,0,0,1))
+BACKGROUND_COLOR = parse_color(cfg.get("color_background", None), default=(1,1,1,1))
 TOOLBAR_COLOR = parse_color(cfg.get("color_blue", None), default=(0.168, 0.168, 0.168, 1))
 
 # registra fonte customizada se possível
@@ -83,18 +83,28 @@ class MainLayout(BoxLayout):
         self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
         self.pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade
 
-        button_group = BoxLayout(orientation='horizontal', size_hint=(None, None))
+        button_group = BoxLayout(orientation='horizontal', spacing=15, size_hint=(None, None))
         button_group.width = self.plus_btn.width + self.pause_btn.width
         button_group.height = max(self.plus_btn.height, self.pause_btn.height) # define altura do grupo de botões
- 
+
         button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)
+
+        # desenha borda
+        # with button_group.canvas.before:
+        #    Color(54, 1, 1, 1)  # cor da borda (vermelho para teste)
+        #    Line(rectangle=(button_group.x, button_group.y, button_group.width, button_group.height), width=2)
 
         # centraliza o grupo
         anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1))
         anchor.add_widget(button_group)
         toolbar.add_widget(anchor) # adiciona o grupo à toolbar
 
+        # desenha borda
+        # with anchor.canvas.before:
+        #    Color(54, 131, 21, 1)  # cor da borda (vermelho para teste)
+        #    Line(rectangle=(anchor.x, anchor.y, anchor.width, anchor.height), width=2)
+            
         self.add_widget(toolbar)
         
         toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
