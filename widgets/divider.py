@@ -4,9 +4,13 @@ from kivy.properties import ListProperty, NumericProperty, OptionProperty, Objec
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 
+# ------------------------------
+# Divider
+# ------------------------------
+
 class Divider(Widget):
     orientation = OptionProperty('horizontal') # horizontal - arrasta verticalmente
-    thickness = NumericProperty(dp(2)) # espessura do divisor (altura para horizontal, largura para vertical)
+    thickness = NumericProperty(dp(4)) # espessura do divisor (altura para horizontal, largura para vertical)
     length = NumericProperty(dp(72)) # comprimento do divisor (largura para horizontal, altura para vertical)
     color = ListProperty([1, 1, 1, 1]) # cor do divisor
 
@@ -101,7 +105,7 @@ class Divider(Widget):
 
             # aplica nova altura
             self.target_widget.height = new_height
-            
+
             # atualiza última posição
             self._last_touch_y = touch.y
 

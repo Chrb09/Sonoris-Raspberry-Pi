@@ -4,10 +4,14 @@ from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 from kivy.properties import NumericProperty
 
+# ------------------------------
+# Toolbar
+# ------------------------------
+
 class Toolbar(BoxLayout):
     # limites padrão (podem ser sobrescritos no __init__)
-    min_height = NumericProperty(dp(80))
-    max_height = NumericProperty(dp(400))
+    min_height = NumericProperty(dp(98))
+    max_height = NumericProperty(dp(132))
 
     def __init__(self, bg_color=(0.168, 0.168, 0.168, 1), min_height=None, max_height=None, **kwargs):
         # a toolbar precisa ter size_hint_y=None para podermos controlar height diretamente
@@ -16,6 +20,7 @@ class Toolbar(BoxLayout):
         kwargs.setdefault('padding', 10)
         super().__init__(**kwargs)
 
+        # sobrescreve limites se fornecidos
         if min_height is not None:
             self.min_height = min_height
         if max_height is not None:

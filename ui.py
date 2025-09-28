@@ -68,28 +68,26 @@ class MainLayout(BoxLayout):
 
         # toolbar
         toolbar = Toolbar(orientation='vertical', bg_color=TOOLBAR_COLOR, height=132, min_height=98, max_height=132)
-        
-        # anchor_div = AnchorLayout(anchor_x='center', anchor_y='center')
-        
-        # divider para redimensionar a toolbar
         divider = Divider(orientation='horizontal', divider_color=TEXT_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height)
         
-        # anchor_div.add_widget(divider)
-        toolbar.add_widget(divider)
-        
-        icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
-        plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
-        pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]')
+        anchor_div = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, None), height=20)
+        anchor_div.add_widget(divider)
+        toolbar.add_widget(anchor_div)
 
-        plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
-        pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade
+        # botões na toolbar
+        icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
+        self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
+        self.pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]')
+
+        self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
+        self.pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade
 
         button_group = BoxLayout(orientation='horizontal', size_hint=(None, None), spacing=18)
-        button_group.width = plus_btn.width + pause_btn.width + 18 # largura total + espaçamento
-        button_group.height = max(plus_btn.height, pause_btn.height) # altura máxima
+        button_group.width = self.plus_btn.width + self.pause_btn.width
+        button_group.height = max(self.plus_btn.height, self.pause_btn.height) # altura máxima
  
-        button_group.add_widget(plus_btn)
-        button_group.add_widget(pause_btn)
+        button_group.add_widget(self.plus_btn)
+        button_group.add_widget(self.pause_btn)
 
         # centraliza o grupo
         anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1))
@@ -97,6 +95,47 @@ class MainLayout(BoxLayout):
         toolbar.add_widget(anchor) # adiciona o grupo à toolbar
 
         self.add_widget(toolbar)
+        
+        toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
+
+    # TODO arrumar esse método para que funcione
+    def on_toolbar_resize(self, toolbar, value):
+        """
+        Esconde o texto dos botões quando a toolbar estiver no min_height.
+        Atualiza de forma segura dependendo da implementação do IconButton.
+        """
+        collapsed = (value <= toolbar.min_height)
+
+        def set_button_text(btn, text_when_shown, hide_when_collapsed=True):
+            print("DEBUG: Setting button text for", btn, "collapsed =", collapsed)
+            try:
+                # verifica se tem atributo 'label' (um Label)
+                if hasattr(btn, "label") and getattr(btn, "label") is not None:
+                    # btn.label é um Label
+                    btn.label.text = "" if collapsed and hide_when_collapsed else text_when_shown
+                    print("DEBUG: Used btn.label.text for button text")
+                    return
+            except Exception:
+                pass
+            try:
+                # verifica se tem atributo 'text' (um string)
+                if hasattr(btn, "text"):
+                    btn.text = "" if collapsed and hide_when_collapsed else text_when_shown
+                    print("DEBUG: Used btn.text for button text")
+                    return
+            except Exception:
+                pass
+            try:
+                # fallback: altera opacity
+                btn.opacity = 0 if collapsed else 1
+                print("DEBUG: Fallback opacity used for button text")
+            except Exception:
+                pass
+
+        # textos desejados quando não colapsado
+        set_button_text(self.plus_btn, "[b]Nova conversa[/b]")
+        print("DEBUG: Toolbar resized to", value, "collapsed =", collapsed)
+
         
 # main app do kivy
 class TranscriberApp(App):
