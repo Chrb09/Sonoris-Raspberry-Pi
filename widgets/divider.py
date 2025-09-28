@@ -33,22 +33,13 @@ class Divider(Widget):
 
         # configura tamanho inicial baseado na orientação (horizontal)
         if self.orientation == 'horizontal':
-            # divisor horizontal: width acompanha parent, height fixa (thickness)
+            # width acompanha parent, height fixa (thickness)
             self.size_hint_y = None
             self.height = self.thickness
 
             # comprimento (largura) definido pela propriedade length
             self.size_hint_x = None
             self.width = self.length
-
-        else:
-            # divisor vertical: height acompanha parent, width fixa (thickness)
-            self.size_hint_x = None
-            self.width = self.thickness
-
-            # comprimento (height) definido pela propriedade length
-            self.size_hint_y = None
-            self.height = self.length
 
         with self.canvas:
             self._color_instr = Color(*self.color)

@@ -83,7 +83,7 @@ class MainLayout(BoxLayout):
         self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
         self.pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade
 
-        button_group = BoxLayout(orientation='horizontal', size_hint=(None, None), spacing=18)
+        button_group = BoxLayout(orientation='horizontal', size_hint=(None, None))
         button_group.width = self.plus_btn.width + self.pause_btn.width
         button_group.height = max(self.plus_btn.height, self.pause_btn.height) # define altura do grupo de botões
  
