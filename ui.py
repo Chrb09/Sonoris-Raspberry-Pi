@@ -35,10 +35,10 @@ else:
     cfg = {}
 
 # configurações de UI (config.json)
-FONT_NAME = cfg.get("fonte", None)
-TEXT_COLOR = parse_color(cfg.get("color_white100", None), default=(1,1,1,1))
+FONT_NAME = cfg.get("fonte", None) 
+TEXT_COLOR = parse_color(cfg.get("color_background", None), default=(1,1,1,1))
 BACKGROUND_COLOR = parse_color(cfg.get("color_background", None), default=(0,0,0,1))
-TOOLBAR_COLOR = parse_color(cfg.get("color_gray300", None), default=(0.168, 0.168, 0.168, 1))
+TOOLBAR_COLOR = parse_color(cfg.get("color_blue", None), default=(0.168, 0.168, 0.168, 1))
 
 # registra fonte customizada se possível
 if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf")):
@@ -52,6 +52,7 @@ Window.clearcolor = BACKGROUND_COLOR
 
 print("\nTESTE DE CONFIGURAÇÕES DE UI \n------------------------------")
 
+print("DEBUG: FONT_NAME =", FONT_NAME, type(FONT_NAME)) # teste de fonte
 print("DEBUG: BACKGROUND_COLOR =", BACKGROUND_COLOR, type(BACKGROUND_COLOR)) # teste de cor de fundo da janela
 print("DEBUG: TOOLBAR_COLOR =", TOOLBAR_COLOR, type(TOOLBAR_COLOR)) # teste de cor da toolbar
 
@@ -76,15 +77,15 @@ class MainLayout(BoxLayout):
 
         # botões na toolbar
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
-        self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
-        self.pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]')
+        self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b][/b]')
+        self.pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b][/b]')
 
         self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
         self.pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade
 
         button_group = BoxLayout(orientation='horizontal', size_hint=(None, None), spacing=18)
         button_group.width = self.plus_btn.width + self.pause_btn.width
-        button_group.height = max(self.plus_btn.height, self.pause_btn.height) # altura máxima
+        button_group.height = max(self.plus_btn.height, self.pause_btn.height) # define altura do grupo de botões
  
         button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)

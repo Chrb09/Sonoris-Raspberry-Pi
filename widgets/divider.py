@@ -2,7 +2,7 @@
 from kivy.uix.widget import Widget
 from kivy.properties import ListProperty, NumericProperty, OptionProperty, ObjectProperty, BooleanProperty
 from kivy.metrics import dp
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color, RoundedRectangle
 
 # ------------------------------
 # Divider
@@ -52,7 +52,7 @@ class Divider(Widget):
 
         with self.canvas:
             self._color_instr = Color(*self.color)
-            self._rect = Rectangle(pos=self.pos, size=self.size)
+            self._rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[5])
 
         # atualiza retângulo e cor ao mudar propriedades
         self.bind(pos=self._update_rect, size=self._update_rect, color=self._update_color)
