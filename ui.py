@@ -69,8 +69,12 @@ class MainLayout(BoxLayout):
         # toolbar
         toolbar = Toolbar(orientation='vertical', bg_color=TOOLBAR_COLOR, height=132, min_height=98, max_height=132)
         
+        # anchor_div = AnchorLayout(anchor_x='center', anchor_y='center')
+        
         # divider para redimensionar a toolbar
-        divider = Divider(orientation='horizontal', divider_color=TEXT_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height, size_hint_y=None)
+        divider = Divider(orientation='horizontal', divider_color=TEXT_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height)
+        
+        # anchor_div.add_widget(divider)
         toolbar.add_widget(divider)
         
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones

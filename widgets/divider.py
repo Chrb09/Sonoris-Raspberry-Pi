@@ -6,19 +6,22 @@ from kivy.graphics import Color, Rectangle
 
 class Divider(Widget):
     orientation = OptionProperty('horizontal') # horizontal - arrasta verticalmente
-    thickness = NumericProperty(dp(10)) # espessura do divisor (altura para horizontal, largura para vertical)
-    # length = NumericProperty(dp(72)) # comprimento do divisor (largura para horizontal, altura para vertical)
+    thickness = NumericProperty(dp(2)) # espessura do divisor (altura para horizontal, largura para vertical)
+    length = NumericProperty(dp(72)) # comprimento do divisor (largura para horizontal, altura para vertical)
     color = ListProperty([1, 1, 1, 1]) # cor do divisor
 
     target_widget = ObjectProperty(None, allownone=True) # widget que será redimensionado
 
     # limites de altura aplicados ao target_widget
     min_height = NumericProperty(98)
-    max_height = NumericProperty(132) 
+    max_height = NumericProperty(132)
     dragging = BooleanProperty(False)
 
-    def __init__(self, divider_color=(1,1,1,1), target_widget=None, min_height=98, max_height=132, **kwargs):
+    def __init__(self, divider_color=(1,1,1,1), target_widget=None,
+                 min_height=98, max_height=132, **kwargs):
+        # permite passar size_hint/width/height por kwargs se quiser sobrescrever
         super().__init__(**kwargs)
+
         self.color = list(divider_color)
         self.target_widget = target_widget
         self.min_height = min_height
@@ -29,12 +32,19 @@ class Divider(Widget):
             # divisor horizontal: width acompanha parent, height fixa (thickness)
             self.size_hint_y = None
             self.height = self.thickness
-            self.size_hint_x = 1
-        else: 
+
+            # comprimento (largura) definido pela propriedade length
+            self.size_hint_x = None
+            self.width = self.length
+
+        else:
             # divisor vertical: height acompanha parent, width fixa (thickness)
             self.size_hint_x = None
             self.width = self.thickness
-            self.size_hint_y = 1
+
+            # comprimento (height) definido pela propriedade length
+            self.size_hint_y = None
+            self.height = self.length
 
         with self.canvas:
             self._color_instr = Color(*self.color)
@@ -91,6 +101,7 @@ class Divider(Widget):
 
             # aplica nova altura
             self.target_widget.height = new_height
+            
             # atualiza última posição
             self._last_touch_y = touch.y
 
