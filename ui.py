@@ -1,33 +1,24 @@
 # ui.py 
 import os
+import sys
 import json
+
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
-from kivy.metrics import dp
-from kivy.core.text import LabelBase
-from kivy.graphics import Color, Line
-from transcriber import Transcriber
-from widgets.divider import Divider
-from widgets.toolbar import Toolbar
-from widgets.transcript_history import FONT_SIZE_PARTIAL, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, TranscriptHistory
-from widgets.icon_button import IconButton
-from utils.colors import parse_color
+
 from kivy.uix.scrollview import ScrollView
+from kivy.core.text import LabelBase
+from transcriber import Transcriber
 from kivy.uix.label import Label
 from kivy.clock import Clock
-import sys
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-from kivy.properties import StringProperty
-from kivy.graphics import Color, Rectangle
-from kivy.uix.image import Image
-from kivy.uix.behaviors import ButtonBehavior
-from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import StringProperty, ListProperty, NumericProperty, BooleanProperty
-from kivy.graphics import Color, RoundedRectangle
 
+from widgets.divider import Divider
+from widgets.toolbar import Toolbar
+from widgets.icon_button import IconButton
+from widgets.transcript_history import FONT_SIZE_PARTIAL, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, TranscriptHistory
+from utils.colors import parse_color
 
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
@@ -60,9 +51,8 @@ TOOLBAR_COLOR = parse_color(cfg.get("color_blue", None), default=(0.168, 0.168, 
 if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf")):
     LabelBase.register(name=FONT_NAME, fn_regular=os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf"))
 
+Window.size = (720, 480) # tamanho inicial da janela
 Window.clearcolor = BACKGROUND_COLOR
-
-
 
 # ------------------------------
 # Testes de Configuração
@@ -109,12 +99,10 @@ class MainLayout(BoxLayout):
         self.add_widget(self.partial_label)
 
         self._partial_reset_ev = None
-
-        # keep transcriber reference so we can start/stop from UI if needed
-        self.transcriber = transcriber
+        self.transcriber = transcriber # referência o transcriber
 
         # toolbar
-        toolbar = Toolbar(orientation='vertical', bg_color=TOOLBAR_COLOR, height=132, min_height=98, max_height=132)
+        toolbar = Toolbar(orientation='vertical', bg_color=TOOLBAR_COLOR, height=200, min_height=150, max_height=200)
         divider = Divider(orientation='horizontal', divider_color=BACKGROUND_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height)
         
         anchor_div = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, None), height=20)
@@ -123,36 +111,25 @@ class MainLayout(BoxLayout):
 
         # botões na toolbar
         icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
-        self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b][/b]')
-        self.pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b][/b]')
+        self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
+        self.pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]')
 
         self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
         self.pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade
 
-        button_group = BoxLayout(orientation='horizontal', spacing=15, size_hint=(None, None))
+        button_group = BoxLayout(orientation='horizontal', spacing=40, size_hint=(None, None))
         button_group.width = self.plus_btn.width + self.pause_btn.width
         button_group.height = max(self.plus_btn.height, self.pause_btn.height) # define altura do grupo de botões
-
+        
         button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)
 
-        # desenha borda
-        # with button_group.canvas.before:
-        #    Color(54, 1, 1, 1)  # cor da borda (vermelho para teste)
-        #    Line(rectangle=(button_group.x, button_group.y, button_group.width, button_group.height), width=2)
-
         # centraliza o grupo
-        anchor = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, 1))
+        anchor = AnchorLayout(anchor_x='center', anchor_y='center')
         anchor.add_widget(button_group)
         toolbar.add_widget(anchor) # adiciona o grupo à toolbar
 
-        # desenha borda
-        # with anchor.canvas.before:
-        #    Color(54, 131, 21, 1)  # cor da borda (vermelho para teste)
-        #    Line(rectangle=(anchor.x, anchor.y, anchor.width, anchor.height), width=2)
-            
         self.add_widget(toolbar)
-        
         toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
     
     def _update_partial_text_size(self, inst, val):
@@ -166,6 +143,7 @@ class MainLayout(BoxLayout):
         """
         collapsed = (value <= toolbar.min_height)
 
+        # função segura para definir o texto do botão
         def set_button_text(btn, text_when_shown, hide_when_collapsed=True):
             print("DEBUG: Setting button text for", btn, "collapsed =", collapsed)
             try:
@@ -196,18 +174,18 @@ class MainLayout(BoxLayout):
         set_button_text(self.plus_btn, "[b]Nova conversa[/b]")
         print("DEBUG: Toolbar resized to", value, "collapsed =", collapsed)
 
-        # UI-callable functions (schedule from callbacks)
+    # adiciona linha final ao histórico
     def add_final(self, text):
         sanitized = text.strip().capitalize() if text else ""
         if sanitized:
             self.history.add_line(sanitized)
             Clock.schedule_once(lambda dt: self.scroll.scroll_to(self.history.lines[-1]))
-        # reset partial quickly
-        Clock.schedule_once(lambda dt: self.set_partial("Aguardando..."), 0.01)
-
+        Clock.schedule_once(lambda dt: self.set_partial("Aguardando..."), 0.01) # limpa o parcial após adicionar final
+    
+    # atualiza o texto parcial
     def set_partial(self, text):
         self.partial_label.text = text
-        # cancel previous reset timer
+        # reseta o timer se já houver um agendado
         if self._partial_reset_ev:
             try:
                 self._partial_reset_ev.cancel()
@@ -215,7 +193,7 @@ class MainLayout(BoxLayout):
                 pass
             self._partial_reset_ev = None
 
-        # schedule reset
+        # agenda reset se o texto não for vazio ou "Aguardando..."
         txt = (text or "").strip()
         if txt and txt.lower() != "aguardando..." and PARTIAL_RESET_MS > 0:
             self._partial_reset_ev = Clock.schedule_once(lambda dt: self._reset_partial(), PARTIAL_RESET_MS / 1000.0)
@@ -235,7 +213,7 @@ class TranscriberApp(App):
     def __init__(self, transcriber: Transcriber, auto_start=True, **kwargs):
         super().__init__(**kwargs)
         self.transcriber = transcriber
-        self.layout = None
+        self.layout = None 
         self._auto_start = auto_start
 
     # nome do aplicativo

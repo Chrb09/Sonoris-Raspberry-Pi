@@ -9,10 +9,6 @@ from kivy.properties import NumericProperty
 # ------------------------------
 
 class Toolbar(BoxLayout):
-    # limites padrão (podem ser sobrescritos no __init__)
-    min_height = NumericProperty(dp(98))
-    max_height = NumericProperty(dp(132))
-
     def __init__(self, bg_color=(0.168, 0.168, 0.168, 1), min_height=None, max_height=None, **kwargs):
         # a toolbar precisa ter size_hint_y=None para podermos controlar height diretamente
         kwargs.setdefault('orientation', 'horizontal')

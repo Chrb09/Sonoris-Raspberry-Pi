@@ -26,7 +26,8 @@ PARTIAL_RESET_MS = int(cfg.get("partial_reset_ms", 3000))
 
 # widget de histórico (scrollable)
 class TranscriptHistory(GridLayout):
-    def __init__(self, min_height=None, max_height=None, padding=12, **kwargs):
+    def __init__(self, **kwargs):
+        kwargs.setdefault('padding', 10)
         super().__init__(**kwargs)
         self.cols = 1
         self.size_hint_y = None
@@ -34,10 +35,10 @@ class TranscriptHistory(GridLayout):
         self.lines = []
 
     # adiciona linha ao histórico, removendo a mais antiga se necessário
-    
     def add_line(self, text):
         lbl = Label(text=text, size_hint_y=None, height=FONT_SIZE_HISTORY*1.6, halign='left', valign='middle',
                     text_size=(self.width, None), font_size=FONT_SIZE_HISTORY, color=(0.168, 0.168, 0.168, 1))
+        
         lbl.bind(width=lambda inst, w: inst.setter('text_size')(inst, (w, None)))
         self.add_widget(lbl)
         self.lines.append(lbl)
