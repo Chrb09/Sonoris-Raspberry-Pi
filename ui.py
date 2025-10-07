@@ -26,12 +26,12 @@ from utils.colors import parse_color
 # TODO adicionar todas as imagens dos botões
 # TODO adicionar os widgets
 # TODO consertar o erro do parse_color que não está retornando a cor correta
+# TODO scroll do divider não funciona na tela lcd
 
 # ------------------------------
 # Configurações Globais do Kivy
 # ------------------------------
 
-# configurações do aplicativo
 BASE_DIR = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 if os.path.exists(CONFIG_PATH):
@@ -45,7 +45,7 @@ FONT_NAME = cfg.get("fonte", None)
 TEXT_COLOR = parse_color(cfg.get("color_blue", None), default=(1,1,1,1))
 BACKGROUND_COLOR = parse_color(cfg.get("color_background", None), default=(1,1,1,1))
 TOOLBAR_COLOR = parse_color(cfg.get("color_blue", None), default=(0.168, 0.168, 0.168, 1))
-
+icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
 
 # registra fonte customizada se possível
 if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf")):
@@ -109,18 +109,28 @@ class MainLayout(BoxLayout):
         anchor_div.add_widget(divider)
         toolbar.add_widget(anchor_div)
 
-        # botões na toolbar
-        icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
-        self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
-        self.pause_btn = IconButton(icon_src=os.path.join(icons_dir, "pause.png"), text='[b]Pausar[/b]')
+        self.is_paused = False
+        self.pause_icon = os.path.join(icons_dir, "pause.png")
+        self.resume_icon = os.path.join(icons_dir, "resume.png")
 
-        self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn")) # TODO funcionalidade
-        self.pause_btn.bind(on_release=lambda inst: print("Clicou no pause_btn")) # TODO funcionalidade
+        # botões na toolbar
+        self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
+        self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
+        self.pause_btn.name = "btn_pause"
+
+        # eventos dos botões
+        self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn"))
+        self.pause_btn.bind(on_release=self._toggle_pause_resume)
 
         button_group = BoxLayout(orientation='horizontal', spacing=40, size_hint=(None, None))
-        button_group.width = self.plus_btn.width + self.pause_btn.width
-        button_group.height = max(self.plus_btn.height, self.pause_btn.height) # define altura do grupo de botões
-        
+        # width pode ser 0 inicialmente dependendo da implementação do IconButton; não é crítico
+        try:
+            button_group.width = max(self.plus_btn.width, self.pause_btn.width) * 2 + 40
+        except Exception:
+            button_group.width = 300
+        button_group.height = max(getattr(self.plus_btn, "height", 60), getattr(self.pause_btn, "height", 60)) # define altura do grupo de botões
+
+        # adiciona botões ao grupo
         button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)
 
@@ -131,7 +141,79 @@ class MainLayout(BoxLayout):
 
         self.add_widget(toolbar)
         toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
+
+    # botão de toggle pausar/retomar
+    def _toggle_pause_resume(self, instance):
+        # inicializa variável se não existir (segurança extra)
+        if not hasattr(self, 'is_paused'):
+            self.is_paused = False
+
+        # pausar
+        if not self.is_paused:
+            print("pausado")
+            try:
+                if self.transcriber:
+                    self.transcriber.stop()
+                    # print("DEBUG: Transcriber stopped successfully")
+            except Exception as e:
+                print("Erro ao pausar transcriber:", e)
+
+            # TODO atualiza visual do botão para 'Retomar'
+            try:
+                instance.icon_src = os.path.join(icons_dir, "resume.png")
+
+                print("DEBUG: Updated button icon to resume_icon")
+            except Exception:
+                print("DEBUG: Failed to update button icon to resume_icon")
+                pass
+
+            # tenta atualizar texto/label de forma segura
+            try:
+                if hasattr(instance, "text"):
+                    instance.text = "Retomar"
+                elif hasattr(instance, "label") and getattr(instance, "label") is not None:
+                    instance.label.text = "Retomar"
+                else:
+                    # fallback: name
+                    instance.name = "btn_resume"
+            except Exception:
+                try:
+                    instance.name = "btn_resume"
+                except Exception:
+                    pass
+
+            self.is_paused = True
+        else:
+            # retomar
+            print("retomar")
+            try:
+                if self.transcriber:
+                    self.transcriber.start()
+            except Exception as e:
+                print("Erro ao iniciar transcriber:", e)
+
+            # volta visual para 'Pausar'
+            try:
+                self._update_button_icon(instance, self.pause_icon)
+            except Exception:
+                pass
+
+            try:
+                if hasattr(instance, "text"):
+                    instance.text = "Pausar"
+                elif hasattr(instance, "label") and getattr(instance, "label") is not None:
+                    instance.label.text = "Pausar"
+                else:
+                    instance.name = "btn_pause"
+            except Exception:
+                try:
+                    instance.name = "btn_pause"
+                except Exception:
+                    pass
+
+            self.is_paused = False
     
+    # atualiza text_size do label parcial para quebra automática
     def _update_partial_text_size(self, inst, val):
         inst.text_size = (inst.width - 20, inst.height)
     
