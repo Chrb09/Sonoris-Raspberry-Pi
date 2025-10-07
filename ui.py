@@ -117,23 +117,34 @@ class MainLayout(BoxLayout):
         self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
         self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
         self.pause_btn.name = "btn_pause"
+        self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
+        self.private_btn = IconButton(icon_src=os.path.join(icons_dir, "private01.png"), text='[b]Privacidade[/b]')
+        
 
         # eventos dos botões
-        self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn"))
-        self.pause_btn.bind(on_release=self._toggle_pause_resume)
+        # self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn"))
+        self.pause_btn.bind(on_release=self._update_pause_state)
 
         button_group = BoxLayout(orientation='horizontal', spacing=40, size_hint=(None, None))
-        # width pode ser 0 inicialmente dependendo da implementação do IconButton; não é crítico
+        self.button_group = button_group
+
+        button_group.height = max(
+            getattr(self.response_btn, "height", 60),
+            getattr(self.private_btn, "height", 60),
+            getattr(self.pause_btn, "height", 60)
+        )
+
         try:
-            button_group.width = max(self.plus_btn.width, self.pause_btn.width) * 2 + 40
+            button_group.width = max(self.response_btn.width, self.private_btn.width, self.pause_btn.width) * 2 + 40
         except Exception:
             button_group.width = 300
-        button_group.height = max(getattr(self.plus_btn, "height", 60), getattr(self.pause_btn, "height", 60)) # define altura do grupo de botões
 
-        # adiciona botões ao grupo
+       # adiciona botões ao grupo
         button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)
-
+        button_group.add_widget(self.response_btn)
+        button_group.add_widget(self.private_btn)
+        
         # centraliza o grupo
         anchor = AnchorLayout(anchor_x='center', anchor_y='center')
         anchor.add_widget(button_group)
@@ -143,48 +154,51 @@ class MainLayout(BoxLayout):
         toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
 
     # botão de toggle pausar/retomar
-    def _toggle_pause_resume(self, instance):
-        # inicializa variável se não existir (segurança extra)
-        if not hasattr(self, 'is_paused'):
-            self.is_paused = False
+    def _update_pause_state(self, instance):
+        """
+        Alterna o estado de pausa:
+         - remove apenas o botão pause atual do group,
+         - cria um novo pause/resume button e o adiciona no mesmo índice,
+         - mantém demais widgets (evita tela branca).
+        """
 
-        # pausar
-        if not self.is_paused:
+        idx = None # índice do botão na toolbar
+        try:
+            # children tem ordem invertida (último adicionado é index 0 na lista children),
+            if self.pause_btn in self.button_group.children:
+                idx = list(self.button_group.children).index(self.pause_btn)
+        except Exception:
+            idx = None
+
+        # Remove o botão antigo (se existir)
+        try:
+            self.button_group.remove_widget(self.pause_btn)
+        except Exception:
+            pass
+
+        # Alterna estado e cria novo botão 
+        if not getattr(self, "is_paused", False):
+            # passar para estado pausado
             print("pausado")
             try:
                 if self.transcriber:
                     self.transcriber.stop()
-                    # print("DEBUG: Transcriber stopped successfully")
             except Exception as e:
                 print("Erro ao pausar transcriber:", e)
 
-            # TODO atualiza visual do botão para 'Retomar'
+            # cria novo botão de 'Retomar'
             try:
-                instance.icon_src = os.path.join(icons_dir, "resume.png")
-
-                print("DEBUG: Updated button icon to resume_icon")
+                new_btn = IconButton(icon_src=self.resume_icon, text="[b]Retomar[/b]")
             except Exception:
-                print("DEBUG: Failed to update button icon to resume_icon")
-                pass
-
-            # tenta atualizar texto/label de forma segura
-            try:
-                if hasattr(instance, "text"):
-                    instance.text = "Retomar"
-                elif hasattr(instance, "label") and getattr(instance, "label") is not None:
-                    instance.label.text = "Retomar"
-                else:
-                    # fallback: name
-                    instance.name = "btn_resume"
-            except Exception:
-                try:
-                    instance.name = "btn_resume"
-                except Exception:
-                    pass
+                # fallback para Button simples caso IconButton dê problema
+                from kivy.uix.button import Button
+                new_btn = Button(text="Retomar")
 
             self.is_paused = True
+
+            # opcional: cria/mostra botão extra "Conversa" quando pausado (se quiser)
+            # (já temos self.plus_btn em cena; se quiser substituí-lo, manipule aqui)
         else:
-            # retomar
             print("retomar")
             try:
                 if self.transcriber:
@@ -192,26 +206,33 @@ class MainLayout(BoxLayout):
             except Exception as e:
                 print("Erro ao iniciar transcriber:", e)
 
-            # volta visual para 'Pausar'
+            # cria novo botão de 'Pausar'
             try:
-                self._update_button_icon(instance, self.pause_icon)
+                new_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
             except Exception:
-                pass
-
-            try:
-                if hasattr(instance, "text"):
-                    instance.text = "Pausar"
-                elif hasattr(instance, "label") and getattr(instance, "label") is not None:
-                    instance.label.text = "Pausar"
-                else:
-                    instance.name = "btn_pause"
-            except Exception:
-                try:
-                    instance.name = "btn_pause"
-                except Exception:
-                    pass
+                from kivy.uix.button import Button
+                new_btn = Button(text="Pausar")
 
             self.is_paused = False
+
+        # bind do novo botão
+        try:
+            new_btn.bind(on_release=self._update_pause_state)
+        except Exception:
+            pass
+
+        # atualiza referência e insere no mesmo lugar no índice
+        self.pause_btn = new_btn
+        try:
+            if idx is not None: # insere no mesmo índice se possível
+                self.button_group.add_widget(self.pause_btn, index=idx)
+            else:
+                self.button_group.add_widget(self.pause_btn)
+        except Exception:
+            try:
+                self.button_group.add_widget(self.pause_btn)
+            except Exception:
+                pass
     
     # atualiza text_size do label parcial para quebra automática
     def _update_partial_text_size(self, inst, val):
