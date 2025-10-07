@@ -52,7 +52,7 @@ if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.tt
     LabelBase.register(name=FONT_NAME, fn_regular=os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf"))
 
 Window.size = (720, 480) # tamanho inicial da janela
-# Window.fullscreen = 'auto' # fullscreen automático
+Window.fullscreen = 'auto' # fullscreen automático
 Window.clearcolor = BACKGROUND_COLOR
 
 # ------------------------------
@@ -70,6 +70,7 @@ print("------------------------------\n")
 # ------------------------------
 # Widgets e Layouts
 # ------------------------------
+
 def _truncate_partial(text):
     if not text:
         return ""
