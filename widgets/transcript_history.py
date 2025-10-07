@@ -5,6 +5,8 @@ from kivy.properties import NumericProperty
 import os
 import json
 
+from utils.colors import parse_color
+
 # ------------------------------
 # TranscriptHistory
 # ------------------------------
@@ -17,12 +19,14 @@ if os.path.exists(CONFIG_PATH):
 else:
     cfg = {}
 
-FONT_SIZE_PARTIAL = 28
-FONT_SIZE_HISTORY = cfg.get("tamanho_historico", 20)
-MAX_PARTIAL_CHARS = int(cfg.get("max_partial_chars", 240))
-PARTIAL_UPDATE_MIN_MS = int(cfg.get("partial_update_min_ms", 80))
-HISTORY_MAX_LINES = int(cfg.get("history_max_lines", 200))
-PARTIAL_RESET_MS = int(cfg.get("partial_reset_ms", 3000))
+# configurações
+FONT_SIZE_PARTIAL = 35
+TEXT_COLOR_GRAY = parse_color(cfg.get("color_gray", None), default=(0.168, 0.168, 0.168, 1))
+FONT_SIZE_HISTORY = cfg.get("tamanho_historico", 28) # tamanho da fonte do histórico
+MAX_PARTIAL_CHARS = int(cfg.get("max_partial_chars", 240)) # máximo de caracteres do texto parcial
+PARTIAL_UPDATE_MIN_MS = int(cfg.get("partial_update_min_ms", 80)) # intervalo mínimo entre atualizações do texto parcial
+HISTORY_MAX_LINES = int(cfg.get("history_max_lines", 200)) # máximo de linhas no histórico
+PARTIAL_RESET_MS = int(cfg.get("partial_reset_ms", 3000)) # tempo para resetar o texto parcial (ms)
 
 # widget de histórico (scrollable)
 class TranscriptHistory(GridLayout):
@@ -37,7 +41,7 @@ class TranscriptHistory(GridLayout):
     # adiciona linha ao histórico, removendo a mais antiga se necessário
     def add_line(self, text):
         lbl = Label(text=text, size_hint_y=None, height=FONT_SIZE_HISTORY*1.6, halign='left', valign='middle',
-                    text_size=(self.width, None), font_size=FONT_SIZE_HISTORY, color=(0.168, 0.168, 0.168, 1))
+                    text_size=(self.width, None), font_size=FONT_SIZE_HISTORY, color=TEXT_COLOR_GRAY)
         
         lbl.bind(width=lambda inst, w: inst.setter('text_size')(inst, (w, None)))
         self.add_widget(lbl)

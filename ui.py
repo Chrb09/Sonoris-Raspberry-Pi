@@ -26,7 +26,7 @@ from utils.colors import parse_color
 # TODO adicionar todas as imagens dos botões
 # TODO adicionar os widgets
 # TODO consertar o erro do parse_color que não está retornando a cor correta
-# TODO scroll do divider não funciona na tela lcd
+# TODO scroll do divider não funciona MUITO BEM na tela lcd
 
 # ------------------------------
 # Configurações Globais do Kivy
@@ -42,7 +42,7 @@ else:
 
 # configurações de UI (config.json)
 FONT_NAME = cfg.get("fonte", None) 
-TEXT_COLOR = parse_color(cfg.get("color_blue", None), default=(1,1,1,1))
+TEXT_COLOR = parse_color(cfg.get("color_black", None), default=(1,1,1,1))
 BACKGROUND_COLOR = parse_color(cfg.get("color_background", None), default=(1,1,1,1))
 TOOLBAR_COLOR = parse_color(cfg.get("color_blue", None), default=(0.168, 0.168, 0.168, 1))
 icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
@@ -52,6 +52,7 @@ if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.tt
     LabelBase.register(name=FONT_NAME, fn_regular=os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf"))
 
 Window.size = (720, 480) # tamanho inicial da janela
+# Window.fullscreen = 'auto' # fullscreen automático
 Window.clearcolor = BACKGROUND_COLOR
 
 # ------------------------------
@@ -93,8 +94,7 @@ class MainLayout(BoxLayout):
         self.add_widget(self.scroll)
 
         # texto parcial
-        self.partial_label = Label(text="Aguardando...", size_hint=(1, 0.25), halign='center', valign='middle',
-                                   text_size=(None, None), font_size=FONT_SIZE_PARTIAL, color=TEXT_COLOR)
+        self.partial_label = Label(text="Aguardando...", size_hint=(1, 0.25), halign='center', valign='middle', text_size=(None, None), font_size=FONT_SIZE_PARTIAL, color=TEXT_COLOR)
         self.partial_label.bind(size=self._update_partial_text_size)
         self.add_widget(self.partial_label)
 
@@ -219,10 +219,6 @@ class MainLayout(BoxLayout):
     
     # TODO arrumar esse método para que funcione
     def on_toolbar_resize(self, toolbar, value):
-        """
-        Esconde o texto dos botões quando a toolbar estiver no min_height.
-        Atualiza de forma segura dependendo da implementação do IconButton.
-        """
         collapsed = (value <= toolbar.min_height)
 
         # função segura para definir o texto do botão

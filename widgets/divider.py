@@ -10,8 +10,8 @@ from kivy.graphics import Color, RoundedRectangle
 
 class Divider(Widget):
     orientation = OptionProperty('horizontal') # horizontal - arrasta verticalmente
-    thickness = NumericProperty(dp(4)) # espessura do divisor (altura para horizontal, largura para vertical)
-    length = NumericProperty(dp(72)) # comprimento do divisor (largura para horizontal, altura para vertical)
+    thickness = NumericProperty(dp(6)) # espessura do divisor (altura para horizontal, largura para vertical)
+    length = NumericProperty(dp(150)) # comprimento do divisor (largura para horizontal, altura para vertical)
     color = ListProperty([1, 1, 1, 1]) # cor do divisor
 
     target_widget = ObjectProperty(None, allownone=True) # widget que será redimensionado
