@@ -114,7 +114,7 @@ class MainLayout(BoxLayout):
         self.resume_icon = os.path.join(icons_dir, "resume.png")
 
         # botões na toolbar
-        self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
+        # self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
         self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
         self.pause_btn.name = "btn_pause"
         self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
@@ -139,8 +139,8 @@ class MainLayout(BoxLayout):
         except Exception:
             button_group.width = 300
 
-       # adiciona botões ao grupo
-        button_group.add_widget(self.plus_btn)
+        # adiciona botões ao grupo
+        # button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)
         button_group.add_widget(self.response_btn)
         button_group.add_widget(self.private_btn)
@@ -173,6 +173,9 @@ class MainLayout(BoxLayout):
         # Remove o botão antigo (se existir)
         try:
             self.button_group.remove_widget(self.pause_btn)
+
+            if not hasattr(self, "plus_btn"): # se não tiver o plus_btn, limpa todos os widgets
+                self.button_group.clear_widgets()  # limpa todos os widgets para evitar duplicatas
         except Exception:
             pass
 
@@ -196,8 +199,14 @@ class MainLayout(BoxLayout):
 
             self.is_paused = True
 
-            # opcional: cria/mostra botão extra "Conversa" quando pausado (se quiser)
-            # (já temos self.plus_btn em cena; se quiser substituí-lo, manipule aqui)
+            if not hasattr(self, "plus_btn") and self.is_paused == True:  # adiciona botão de nova conversa se não existir
+                try:
+                    self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text="[b]Nova conversa[/b]")
+                    self.button_group.add_widget(self.plus_btn)
+                except Exception:
+                    pass
+
+        # passar para estado retomado
         else:
             print("retomar")
             try:
