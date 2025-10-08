@@ -31,7 +31,7 @@ PARTIAL_RESET_MS = int(cfg.get("partial_reset_ms", 3000)) # tempo para resetar o
 # widget de histórico (scrollable)
 class TranscriptHistory(GridLayout):
     def __init__(self, **kwargs):
-        kwargs.setdefault('padding', 10)
+        kwargs.setdefault('padding', 10) 
         super().__init__(**kwargs)
         self.cols = 1
         self.size_hint_y = None
@@ -43,8 +43,8 @@ class TranscriptHistory(GridLayout):
         lbl = Label(text=text, size_hint_y=None, height=FONT_SIZE_HISTORY*1.6, halign='left', valign='middle',
                     text_size=(self.width, None), font_size=FONT_SIZE_HISTORY, color=TEXT_COLOR_GRAY)
         
-        lbl.bind(width=lambda inst, w: inst.setter('text_size')(inst, (w, None)))
-        self.add_widget(lbl)
+        lbl.bind(width=lambda inst, w: inst.setter('text_size')(inst, (w, None))) # ajusta text_size ao width
+        self.add_widget(lbl) 
         self.lines.append(lbl)
 
     # limpa todo o histórico
@@ -55,4 +55,3 @@ class TranscriptHistory(GridLayout):
             except Exception:
                 pass
         self.lines = []
-

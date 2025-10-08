@@ -52,7 +52,7 @@ if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.tt
     LabelBase.register(name=FONT_NAME, fn_regular=os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf"))
 
 Window.size = (720, 480) # tamanho inicial da janela
-Window.fullscreen = 'auto' # fullscreen automático
+# Window.fullscreen = 'auto' # fullscreen automático
 Window.clearcolor = BACKGROUND_COLOR
 
 # ------------------------------
@@ -71,6 +71,7 @@ print("------------------------------\n")
 # Widgets e Layouts
 # ------------------------------
 
+# função para truncar texto parcial com reticências
 def _truncate_partial(text):
     if not text:
         return ""
@@ -105,8 +106,9 @@ class MainLayout(BoxLayout):
         # toolbar
         toolbar = Toolbar(orientation='vertical', bg_color=TOOLBAR_COLOR, height=200, min_height=150, max_height=200)
         divider = Divider(orientation='horizontal', divider_color=BACKGROUND_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height)
-        
-        anchor_div = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, None), height=20)
+
+        # adiciona divisor à toolbar
+        anchor_div = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, None), height=20) 
         anchor_div.add_widget(divider)
         toolbar.add_widget(anchor_div)
 
@@ -121,7 +123,6 @@ class MainLayout(BoxLayout):
         self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
         self.private_btn = IconButton(icon_src=os.path.join(icons_dir, "private01.png"), text='[b]Privacidade[/b]')
         
-
         # eventos dos botões
         # self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn"))
         self.pause_btn.bind(on_release=self._update_pause_state)
@@ -134,22 +135,18 @@ class MainLayout(BoxLayout):
             getattr(self.private_btn, "height", 60),
             getattr(self.pause_btn, "height", 60)
         )
-
-        try:
-            button_group.width = max(self.response_btn.width, self.private_btn.width, self.pause_btn.width) * 2 + 40
-        except Exception:
-            button_group.width = 300
+        button_group.width = 300 # largura fixa inicial
 
         # adiciona botões ao grupo
         # button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)
         button_group.add_widget(self.response_btn)
         button_group.add_widget(self.private_btn)
-        
+
         # centraliza o grupo
         anchor = AnchorLayout(anchor_x='center', anchor_y='center')
         anchor.add_widget(button_group)
-        toolbar.add_widget(anchor) # adiciona o grupo à toolbar
+        toolbar.add_widget(anchor)
 
         self.add_widget(toolbar)
         toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
@@ -283,7 +280,7 @@ class MainLayout(BoxLayout):
         set_button_text(self.plus_btn, "[b]Nova conversa[/b]")
         print("DEBUG: Toolbar resized to", value, "collapsed =", collapsed)
 
-    # adiciona linha final ao histórico
+    # adiciona linha final ao histórico e limpa o parcial
     def add_final(self, text):
         sanitized = text.strip().capitalize() if text else ""
         if sanitized:
@@ -331,6 +328,7 @@ class TranscriberApp(App):
         self.layout = MainLayout(self.transcriber)
         return self.layout
     
+    # inicializa o aplicativo e callbacks do transcriber
     def on_start(self):
         # atualiza o texto parcial
         def on_partial(p):
