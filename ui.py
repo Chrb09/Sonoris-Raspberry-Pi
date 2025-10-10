@@ -147,7 +147,7 @@ class MainLayout(BoxLayout):
         toolbar.add_widget(anchor)
 
         self.add_widget(toolbar)
-        toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
+        # toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
 
     # botão de toggle pausar/retomar
     def _update_pause_state(self, instance):
