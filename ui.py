@@ -7,17 +7,14 @@ from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
-
 from kivy.uix.scrollview import ScrollView
 from kivy.core.text import LabelBase
 from transcriber import Transcriber
 from kivy.uix.label import Label
 from kivy.clock import Clock
 
-from widgets.divider import Divider
-from widgets.toolbar import Toolbar
-from widgets.icon_button import IconButton
-from widgets.transcript_history import FONT_SIZE_PARTIAL, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, TranscriptHistory
+from widgets import Divider, Toolbar, IconButton, TranscriptHistory
+from widgets.transcript_history import MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
 from utils.colors import parse_color
 
 # TODO deixar o botão funcional
@@ -277,7 +274,7 @@ class MainLayout(BoxLayout):
                 pass
 
         # textos desejados quando não colapsado
-        set_button_text(self.plus_btn, "[b]Nova conversa[/b]")
+        # set_button_text(self.plus_btn, "[b]Nova conversa[/b]")
         print("DEBUG: Toolbar resized to", value, "collapsed =", collapsed)
 
     # adiciona linha final ao histórico e limpa o parcial
