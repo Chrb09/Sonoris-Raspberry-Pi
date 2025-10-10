@@ -13,8 +13,8 @@ from transcriber import Transcriber
 from kivy.uix.label import Label
 from kivy.clock import Clock
 
-from widgets import Divider, Toolbar, IconButton, TranscriptHistory
-from widgets.transcript_history import MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
+from widgets import Divider, Toolbar, IconButton, TranscriptHistory, toolbar
+from widgets.transcript_history import FONT_SIZE_HISTORY, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
 from utils.colors import parse_color
 
 # TODO deixar o botão funcional
@@ -86,19 +86,20 @@ class MainLayout(BoxLayout):
     def __init__(self, transcriber: Transcriber, **kwargs):
         super().__init__(orientation='vertical', **kwargs)
         
+        self._partial_reset_ev = None
+        self.transcriber = transcriber # referência o transcriber
+        
         # histórico de transcrição (scrollable)
-        self.scroll = ScrollView(size_hint=(1, 1))
+        history_height = int(FONT_SIZE_HISTORY * 4)
+        self.scroll = ScrollView(size_hint=(1, None), height=history_height, do_scroll_x=False, do_scroll_y=True)
         self.history = TranscriptHistory()
         self.scroll.add_widget(self.history)
         self.add_widget(self.scroll)
 
         # texto parcial
-        self.partial_label = Label(text="Aguardando...", size_hint=(1, 0.25), halign='center', valign='middle', text_size=(None, None), font_size=FONT_SIZE_PARTIAL, color=TEXT_COLOR)
+        self.partial_label = Label(text="Aguardando...", size_hint=(1, 1), halign='center', valign='middle', text_size=(None, None), font_size=FONT_SIZE_PARTIAL, color=TEXT_COLOR)
         self.partial_label.bind(size=self._update_partial_text_size)
         self.add_widget(self.partial_label)
-
-        self._partial_reset_ev = None
-        self.transcriber = transcriber # referência o transcriber
 
         # toolbar
         toolbar = Toolbar(orientation='vertical', bg_color=TOOLBAR_COLOR, height=200, min_height=150, max_height=200)
@@ -240,42 +241,7 @@ class MainLayout(BoxLayout):
     
     # atualiza text_size do label parcial para quebra automática
     def _update_partial_text_size(self, inst, val):
-        inst.text_size = (inst.width - 20, inst.height)
-    
-    # TODO arrumar esse método para que funcione
-    def on_toolbar_resize(self, toolbar, value):
-        collapsed = (value <= toolbar.min_height)
-
-        # função segura para definir o texto do botão
-        def set_button_text(btn, text_when_shown, hide_when_collapsed=True):
-            print("DEBUG: Setting button text for", btn, "collapsed =", collapsed)
-            try:
-                # verifica se tem atributo 'label' (um Label)
-                if hasattr(btn, "label") and getattr(btn, "label") is not None:
-                    # btn.label é um Label
-                    btn.label.text = "" if collapsed and hide_when_collapsed else text_when_shown
-                    print("DEBUG: Used btn.label.text for button text")
-                    return
-            except Exception:
-                pass
-            try:
-                # verifica se tem atributo 'text' (um string)
-                if hasattr(btn, "text"):
-                    btn.text = "" if collapsed and hide_when_collapsed else text_when_shown
-                    print("DEBUG: Used btn.text for button text")
-                    return
-            except Exception:
-                pass
-            try:
-                # fallback: altera opacity
-                btn.opacity = 0 if collapsed else 1
-                print("DEBUG: Fallback opacity used for button text")
-            except Exception:
-                pass
-
-        # textos desejados quando não colapsado
-        # set_button_text(self.plus_btn, "[b]Nova conversa[/b]")
-        print("DEBUG: Toolbar resized to", value, "collapsed =", collapsed)
+        inst.text_size = (inst.width - 40, inst.height)
 
     # adiciona linha final ao histórico e limpa o parcial
     def add_final(self, text):

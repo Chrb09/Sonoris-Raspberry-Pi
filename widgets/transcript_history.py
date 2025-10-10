@@ -1,9 +1,9 @@
 # widgets/icon_button.py
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-from kivy.properties import NumericProperty
 import os
 import json
+
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
 
 from utils.colors import parse_color
 

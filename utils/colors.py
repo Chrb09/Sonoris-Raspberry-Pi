@@ -1,6 +1,5 @@
 # colors.py
 # funções para manipulação de cores
-import re
 
 from utils.helpers import _clamp
 
