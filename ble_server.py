@@ -1,34 +1,27 @@
-# ble_server.py
 import asyncio
 import threading
 import time
 from bluez_peripheral.gatt.service import Service
 from bluez_peripheral.gatt.characteristic import characteristic, CharacteristicFlags as CharFlags
+from bluez_peripheral.gatt.descriptor import descriptor, DescriptorFlags as DescFlags
 from bluez_peripheral.advert import Advertisement
 from bluez_peripheral.util import get_message_bus
 
-# UUIDs — mantenha o mesmo que você usa no Flutter
 SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0"
 CHAR_UUID    = "12345678-1234-5678-1234-56789abcdef1"
 
-class ControlService(Service):
+class ConnectService(Service):
     def __init__(self, on_start_cb=None, on_stop_cb=None):
         super().__init__(SERVICE_UUID, True)
         self.on_start_cb = on_start_cb
         self.on_stop_cb = on_stop_cb
 
-    # --- INÍCIO DA CORREÇÃO ---
-    # 1. Remova as flags READ e NOTIFY. Deixe apenas WRITE.
-    # 2. Como não há READ, não precisamos mais do getter. A função agora serve apenas para o setter.
-    @characteristic(CHAR_UUID, CharFlags.WRITE)
-    def control(self, options):
-        # Este método getter agora pode ser vazio, pois nunca será chamado sem a flag READ.
-        # Algumas versões da biblioteca podem exigir que ele exista, mas não seja usado.
+    @characteristic(CHAR_UUID, CharFlags.WRITE | CharFlags.WRITE_WITHOUT_RESPONSE)
+    def connect(self, options):
         pass
 
-    @control.setter
-    def control(self, value, options):
-        # A lógica de escrita permanece a mesma.
+    @connect.setter
+    def connect(self, value, options):
         try:
             txt = bytes(value).decode('utf-8').strip().upper()
         except Exception:
@@ -48,7 +41,6 @@ async def _ble_main(on_start_cb, on_stop_cb, stop_event: threading.Event):
     service = ControlService(on_start_cb=on_start_cb, on_stop_cb=on_stop_cb)
     await service.register(bus)
 
-    # tentativa tolerante para criar Advertisement (cobre variações de API)
     advert = None
     try:
         advert = Advertisement("SonorisRPi", [SERVICE_UUID], appearance=0, timeout=0, discoverable=True)
@@ -62,7 +54,6 @@ async def _ble_main(on_start_cb, on_stop_cb, stop_event: threading.Event):
     await advert.register(bus)
     print("[BLE] Advert registered - advertising service:", SERVICE_UUID)
 
-    # loop simples até stop_event ser setado
     try:
         while not stop_event.is_set():
             await asyncio.sleep(0.5)
