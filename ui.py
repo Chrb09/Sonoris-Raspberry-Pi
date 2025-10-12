@@ -4,10 +4,13 @@ import os
 import sys
 import json
 
+
+
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
+from kivy.uix.image import Image
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
@@ -157,18 +160,21 @@ class MainLayout(BoxLayout):
 
     def show_private_popup(self, instance):
         print("Clicou no private_btn - mostrar popup de privacidade")
-        box = BoxLayout(orientation='vertical', spacing=10)
-        
-        # icon = Label(text="[img]{}[/img]".format(os.path.join(icons_dir, "lock.png")), font_size=50, size_hint=(1, None), height=60, halign='center', valign='middle', markup=True)
-        #box.add_widget(icon)
 
-        title = Label(text="[b]Deseja ativar o modo privado?[/b]", font_size=24, size_hint=(1, None), height=40, halign='center', valign='middle', markup=True)
+        anchor = AnchorLayout(anchor_x='center', anchor_y='center')
+        box = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        icon = Image(source=os.path.join(icons_dir, "lock.png"), size_hint=(None, None), size=(dp(47), dp(47)))
+        icon_anchor = AnchorLayout(size_hint=(1, None), height=dp(120))
+        icon_anchor.add_widget(icon)
+        box.add_widget(icon_anchor)
+
+        title = Label(text="[b]Deseja ativar o modo privado?[/b]", color=TEXT_COLOR, font_size=48, size_hint=(1, None), height=40, halign='center', valign='middle', markup=True)
         box.add_widget(title)
 
-        subtitle = Label(text="As transcrições não serão salvas até você iniciar \n uma nova conversa.", font_size=16, size_hint=(1, None), height=30, halign='center', valign='middle', markup=True)
+        subtitle = Label(text="As transcrições não serão salvas até você iniciar \n uma nova conversa.", color=TEXT_COLOR, font_size=26, size_hint=(1, None), height=30, halign='center', valign='middle', markup=True)
         box.add_widget(subtitle)
 
-        
         def CommonButton(text, on_release_callback):
             btn = Button(
                 text=f"[b]{text}[/b]",
@@ -176,11 +182,12 @@ class MainLayout(BoxLayout):
                 size_hint=(1, None),
                 height=dp(48),
                 background_normal='',  # remove background image para usar background_color
-                background_down='',    # idem
-                background_color=TOOLBAR_COLOR,  # tom de azul parecido com sua imagem
+                background_down='',    
+                background_color=TOOLBAR_COLOR,
                 color=BACKGROUND_COLOR,
-                font_size=dp(16)
+                font_size=dp(26)
             )
+
             btn.bind(on_release=on_release_callback)
             return btn
 
@@ -191,9 +198,10 @@ class MainLayout(BoxLayout):
         btn_box = BoxLayout(orientation='horizontal', spacing=10, size_hint=(1, None), height=50)
         btn_box.add_widget(confirm_btn)
         btn_box.add_widget(negative_btn)
-
         box.add_widget(btn_box)
+
         def enable_private_and_close(context_self):
+            print ("Ativando modo privado e fechando popup")
             # context_self.private_mode = True
             # context_self.transcript_history.clear()
 
@@ -203,13 +211,16 @@ class MainLayout(BoxLayout):
                 pass
             popup.dismiss()
 
+        anchor.add_widget(box)
+        
         popup = Popup(
         title='',
-        content=box,
-        size_hint=(None, None),
-        size=(dp(460), dp(260)),
+        content=anchor,
+        size_hint=(1,1),
         auto_dismiss=False,
-        separator_height=0
+        separator_height=0,
+        background = '',
+        background_color = BACKGROUND_COLOR,
         )
 
         popup.open()
