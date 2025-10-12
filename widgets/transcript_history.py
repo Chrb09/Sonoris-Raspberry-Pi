@@ -21,7 +21,7 @@ else:
 
 # configurações
 FONT_SIZE_PARTIAL = 35
-TEXT_COLOR_GRAY = parse_color(cfg.get("color_gray", None), default=(0.168, 0.168, 0.168, 1))
+TEXT_COLOR_GRAY = parse_color(cfg.get("color_gray", None), default=((0.30, 0.31, 0.31, 1))) # cor cinza para o texto TODO
 FONT_SIZE_HISTORY = cfg.get("tamanho_historico", 28) # tamanho da fonte do histórico
 MAX_PARTIAL_CHARS = int(cfg.get("max_partial_chars", 240)) # máximo de caracteres do texto parcial
 PARTIAL_UPDATE_MIN_MS = int(cfg.get("partial_update_min_ms", 80)) # intervalo mínimo entre atualizações do texto parcial
