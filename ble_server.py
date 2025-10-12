@@ -38,7 +38,7 @@ class ConnectService(Service):
 
 async def _ble_main(on_start_cb, on_stop_cb, stop_event: threading.Event):
     bus = await get_message_bus()
-    service = ControlService(on_start_cb=on_start_cb, on_stop_cb=on_stop_cb)
+    service = ConnectService(on_start_cb=on_start_cb, on_stop_cb=on_stop_cb)
     await service.register(bus)
 
     advert = None
