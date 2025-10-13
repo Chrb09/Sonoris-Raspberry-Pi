@@ -6,7 +6,6 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, ListProperty, NumericProperty, BooleanProperty
 from kivy.graphics import Color, RoundedRectangle
 from widgets.image_canvas import ImageCanvas
-import kivy
 
 # ------------------------------
 # IconButton

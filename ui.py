@@ -4,8 +4,6 @@ import os
 import sys
 import json
 
-
-
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.button import Button
@@ -19,6 +17,7 @@ from kivy.core.text import LabelBase
 from transcriber import Transcriber
 from kivy.uix.label import Label
 from kivy.clock import Clock
+from kivy.graphics import Color, RoundedRectangle
 
 from widgets import Divider, Toolbar, IconButton, TranscriptHistory, toolbar
 from widgets.transcript_history import FONT_SIZE_HISTORY, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
@@ -164,29 +163,38 @@ class MainLayout(BoxLayout):
         anchor = AnchorLayout(anchor_x='center', anchor_y='center')
         box = BoxLayout(orientation='vertical', padding=20, spacing=15)
 
-        icon = Image(source=os.path.join(icons_dir, "lock.png"), size_hint=(None, None), size=(dp(47), dp(47)))
-        icon_anchor = AnchorLayout(size_hint=(1, None), height=dp(120))
+        icon = Image(source=os.path.join(icons_dir, "lock.png"), size_hint=(None, None), size=(dp(70), dp(70)), allow_stretch=True, keep_ratio=True)
+        icon_anchor = AnchorLayout(size_hint=(1, 1))
         icon_anchor.add_widget(icon)
         box.add_widget(icon_anchor)
 
-        title = Label(text="[b]Deseja ativar o modo privado?[/b]", color=TEXT_COLOR, font_size=48, size_hint=(1, None), height=40, halign='center', valign='middle', markup=True)
+        # cria título e subtítulo
+        title = Label(text="[b]Deseja ativar o modo privado?[/b]", color=TEXT_COLOR, font_size=40, size_hint=(1, None), halign='center', valign='middle', markup=True)
         box.add_widget(title)
 
-        subtitle = Label(text="As transcrições não serão salvas até você iniciar \n uma nova conversa.", color=TEXT_COLOR, font_size=26, size_hint=(1, None), height=30, halign='center', valign='middle', markup=True)
+        subtitle = Label(text="As transcrições não serão salvas até você iniciar \n uma nova conversa.", color=TEXT_COLOR, font_size=26, size_hint=(1, None), halign='center', valign='middle', markup=True)
         box.add_widget(subtitle)
-
+        
         def CommonButton(text, on_release_callback):
             btn = Button(
                 text=f"[b]{text}[/b]",
                 markup=True,
                 size_hint=(1, None),
-                height=dp(48),
+                height=dp(65),
                 background_normal='',  # remove background image para usar background_color
                 background_down='',    
-                background_color=TOOLBAR_COLOR,
+                background_color=(0, 0, 0, 0),
                 color=BACKGROUND_COLOR,
-                font_size=dp(26)
+                font_size=dp(30)
             )
+            # desenha o fundo arredondado com a cor TOOLBAR_COLOR
+            with btn.canvas.before:
+                Color(*TOOLBAR_COLOR)
+                btn._rounded_rect = RoundedRectangle(pos=btn.pos, size=btn.size, radius=[dp(14)])
+                # atualiza o rounded rect quando o botão mudar de pos/size
+                
+                btn.bind(pos=lambda inst, val: setattr(inst._rounded_rect, "pos", inst.pos))
+                btn.bind(size=lambda inst, val: setattr(inst._rounded_rect, "size", inst.size))
 
             btn.bind(on_release=on_release_callback)
             return btn
@@ -195,7 +203,7 @@ class MainLayout(BoxLayout):
         confirm_btn = CommonButton("Sim", lambda *_: enable_private_and_close(self))
         negative_btn = CommonButton("Não", lambda *_: popup.dismiss())
 
-        btn_box = BoxLayout(orientation='horizontal', spacing=10, size_hint=(1, None), height=50)
+        btn_box = BoxLayout(orientation='horizontal', spacing=15, size_hint=(1, None))
         btn_box.add_widget(confirm_btn)
         btn_box.add_widget(negative_btn)
         box.add_widget(btn_box)
