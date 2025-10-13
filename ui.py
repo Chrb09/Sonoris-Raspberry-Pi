@@ -3,6 +3,7 @@ from email.mime import text
 import os
 import sys
 import json
+from turtle import title
 
 from kivy.app import App
 from kivy.core.window import Window
@@ -161,7 +162,9 @@ class MainLayout(BoxLayout):
         print("Clicou no private_btn - mostrar popup de privacidade")
 
         anchor = AnchorLayout(anchor_x='center', anchor_y='center')
-        box = BoxLayout(orientation='vertical', padding=20, spacing=15)
+        box = BoxLayout(orientation='vertical', padding=(24, 20), spacing=15)
+        box.width = min(dp(680), Window.width * 0.95)
+        box.height = dp(300)  # altura inicial, será ajustada depois
 
         icon = Image(source=os.path.join(icons_dir, "lock.png"), size_hint=(None, None), size=(dp(70), dp(70)), allow_stretch=True, keep_ratio=True)
         icon_anchor = AnchorLayout(size_hint=(1, 1))
@@ -170,9 +173,13 @@ class MainLayout(BoxLayout):
 
         # cria título e subtítulo
         title = Label(text="[b]Deseja ativar o modo privado?[/b]", color=TEXT_COLOR, font_size=40, size_hint=(1, None), halign='center', valign='middle', markup=True)
+        title.bind(width=lambda inst, w: setattr(inst, "text_size", (w, None)))
+        title.bind(texture_size=lambda inst, ts: setattr(inst, "height", ts[1] if ts[1] > 0 else dp(36)))
         box.add_widget(title)
 
         subtitle = Label(text="As transcrições não serão salvas até você iniciar \n uma nova conversa.", color=TEXT_COLOR, font_size=26, size_hint=(1, None), halign='center', valign='middle', markup=True)
+        subtitle.bind(width=lambda inst, w: setattr(inst, "text_size", (w, None)))
+        subtitle.bind(texture_size=lambda inst, ts: setattr(inst, "height", ts[1] if ts[1] > 0 else dp(28)))
         box.add_widget(subtitle)
         
         def CommonButton(text, on_release_callback):
@@ -193,8 +200,8 @@ class MainLayout(BoxLayout):
                 btn._rounded_rect = RoundedRectangle(pos=btn.pos, size=btn.size, radius=[dp(14)])
                 # atualiza o rounded rect quando o botão mudar de pos/size
                 
-                btn.bind(pos=lambda inst, val: setattr(inst._rounded_rect, "pos", inst.pos))
-                btn.bind(size=lambda inst, val: setattr(inst._rounded_rect, "size", inst.size))
+            btn.bind(pos=lambda inst, val: setattr(inst._rounded_rect, "pos", inst.pos))
+            btn.bind(size=lambda inst, val: setattr(inst._rounded_rect, "size", inst.size))
 
             btn.bind(on_release=on_release_callback)
             return btn
@@ -231,6 +238,14 @@ class MainLayout(BoxLayout):
         background_color = BACKGROUND_COLOR,
         )
 
+        Clock.schedule_once(lambda dt: setattr(
+            box,
+            "height",
+            sum((child.height + box.spacing) for child in box.children)
+            + ((box.padding[1] + box.padding[3]) if isinstance(box.padding, (list, tuple)) else (box.padding * 2))
+            + 10
+        ), 0)
+        
         popup.open()
 
     # botão de toggle pausar/retomar
