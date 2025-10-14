@@ -264,6 +264,7 @@ class MainLayout(BoxLayout):
         
         popup.open()
     
+    # mostra categorias de resposta rápidas
     def _show_categories(self, instance):
         print("Clicou no response_btn - mostrar categorias de resposta")
         categories = ["Positiva", "Negativa", "Neutras", "Perguntas"]
@@ -328,24 +329,49 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
+        # função para criar botões estilo "pill"
+        def PillButton(text, on_release_callback):
+            btn = Button(
+                text=f"[b]{text}[/b]",
+                markup=True,
+                size_hint=(None, None),
+                height=dp(45),
+                background_normal='',  # remove background image para usar background_color
+                background_down='',    
+                background_color=(0, 0, 0, 0),
+                color=TOOLBAR_COLOR,
+                font_size=dp(24)
+            )
+            # desenha o fundo arredondado com a cor TOOLBAR_COLOR
+            with btn.canvas.before:
+                Color(*BACKGROUND_COLOR)
+                btn._rounded_rect = RoundedRectangle(pos=btn.pos, size=btn.size, radius=[dp(25)])
+            # atualiza o rounded rect quando o botão mudar de pos/size
+            btn.bind(pos=lambda inst, val: setattr(inst._rounded_rect, "pos", inst.pos))
+            btn.bind(size=lambda inst, val: setattr(inst._rounded_rect, "size", inst.size))
+            btn.bind(texture_size=lambda inst, val: setattr(inst, "width", inst.texture_size[0] + dp(40)))
+
+            btn.bind(on_release=on_release_callback)
+            return btn
+
         # TODO cria e adiciona categorias 
-        for cat in categories:
-            cat_btn = IconButton(icon_src="", text=f"[b]{cat}[/b]")
+        for categoryname in categories:
+            category_btn = PillButton(text=f"[b]{categoryname}[/b]", on_release_callback=lambda *_: print(f"Clicou na categoria {categoryname}"))
 
             # bind do clique: chama handler se existir
             if hasattr(self, "_on_quick_reply_selected"):
-                cat_btn.bind(on_release=lambda inst, c=cat: self._on_quick_reply_selected(c))
+                category_btn.bind(on_release=lambda inst, c=categoryname: self._on_quick_reply_selected(c))
             elif hasattr(self, "handle_quick_reply"):
-                cat_btn.bind(on_release=lambda inst, c=cat: self.handle_quick_reply(c))
+                category_btn.bind(on_release=lambda inst, c=categoryname: self.handle_quick_reply(c))
             else:
-                cat_btn.bind(on_release=lambda inst, c=cat: print("Categoria escolhida:", c))
+                category_btn.bind(on_release=lambda inst, c=categoryname: print("else clicou na categoria", c))
 
             try:
-                self.button_group.add_widget(cat_btn)
+                self.button_group.add_widget(category_btn)
             except Exception:
                 # fallback simples
                 try:
-                    self.button_group.add_widget(cat_btn)
+                    self.button_group.add_widget(category_btn)
                 except Exception:
                     pass
 
