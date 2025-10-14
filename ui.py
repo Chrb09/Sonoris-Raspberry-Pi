@@ -131,7 +131,7 @@ class MainLayout(BoxLayout):
         # eventos dos botões
         # self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn"))
         self.pause_btn.bind(on_release=self._update_pause_state)
-        self.response_btn.bind(on_release=lambda inst: print("Clicou no response_btn"))
+        self.response_btn.bind(on_release=self._show_categories)
         self.private_btn.bind(on_release=self.show_private_popup)
 
         button_group = BoxLayout(orientation='horizontal', spacing=40, size_hint=(None, None))
@@ -157,6 +157,22 @@ class MainLayout(BoxLayout):
 
         self.add_widget(toolbar)
         # toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
+
+        # salva a ordem original left->right para uso por outras funções
+        try:
+            # children está invertido (visual left->right = reversed(children))
+            self._original_button_order = list(reversed(list(self.button_group.children)))
+        except Exception:
+            # fallback: compor manualmente se necessário
+            order = []
+            for name in ("plus_btn", "pause_btn", "response_btn", "private_btn"):
+                if hasattr(self, name):
+                    order.append(getattr(self, name))
+            self._original_button_order = order
+
+        # estado para esconder/mostrar
+        self._hidden_buttons = []
+        self._buttons_hidden = False
 
     def show_private_popup(self, instance):
         print("Clicou no private_btn - mostrar popup de privacidade")
@@ -247,16 +263,96 @@ class MainLayout(BoxLayout):
         ), 0)
         
         popup.open()
+    
+    def _show_categories(self, instance):
+        print("Clicou no response_btn - mostrar categorias de resposta")
+        categories = ["Positiva", "Negativa", "Neutras", "Perguntas"]
 
-    # botão de toggle pausar/retomar
+        local_original = getattr(self, "_original_button_order", None)
+        if not local_original:
+            # fallback: calcula localmente sem atribuir a self._original_button_order
+            local_original = list(reversed(list(self.button_group.children)))
+
+        # limpa a toolbar primeiro
+        try:
+            current_children = list(self.button_group.children)
+        except Exception:
+            current_children = []
+        # salvamos as instâncias removidas para referência (inverte para left->right se necessário)
+        self._hidden_buttons = list(reversed(current_children))
+        # limpa
+        try:
+            self.button_group.clear_widgets()
+        except Exception:
+            for ch in current_children:
+                try:
+                    self.button_group.remove_widget(ch)
+                except Exception:
+                    pass
+
+        back_btn = IconButton(icon_src=os.path.join(icons_dir, "back.png"), text='[b]Voltar[/b]')
+        back_btn.bind(on_release=lambda *_: _restore_original())
+        
+        # restaura a barra original
+        def _restore_original(*_args):
+            # limpa tudo primeiro
+            try:
+                self.button_group.clear_widgets()
+            except Exception:
+                for c in list(self.button_group.children):
+                    try:
+                        self.button_group.remove_widget(c)
+                    except Exception:
+                        pass
+
+            # re-adiciona os widgets na ordem original
+            for w in self._original_button_order:
+                # evita adicionar widgets que foram destruídos
+                try:
+                    if w not in self.button_group.children:
+                        self.button_group.add_widget(w)
+                except Exception:
+                    # se falhar, tenta adicionar uma nova instância simples (fallback)
+                    try:
+                        from kivy.uix.button import Button
+                        self.button_group.add_widget(Button(text="??"))
+                    except Exception:
+                        pass
+
+        try:
+            self.button_group.add_widget(back_btn)
+        except Exception:
+            try:
+                # se falhar, tenta adicionar sem index
+                self.button_group.add_widget(back_btn)
+            except Exception:
+                pass
+
+        # TODO cria e adiciona categorias 
+        for cat in categories:
+            cat_btn = IconButton(icon_src="", text=f"[b]{cat}[/b]")
+
+            # bind do clique: chama handler se existir
+            if hasattr(self, "_on_quick_reply_selected"):
+                cat_btn.bind(on_release=lambda inst, c=cat: self._on_quick_reply_selected(c))
+            elif hasattr(self, "handle_quick_reply"):
+                cat_btn.bind(on_release=lambda inst, c=cat: self.handle_quick_reply(c))
+            else:
+                cat_btn.bind(on_release=lambda inst, c=cat: print("Categoria escolhida:", c))
+
+            try:
+                self.button_group.add_widget(cat_btn)
+            except Exception:
+                # fallback simples
+                try:
+                    self.button_group.add_widget(cat_btn)
+                except Exception:
+                    pass
+
+    
+    # botão de toggle pausar/retomar 
+    # TODO padronizar com os demais botoes
     def _update_pause_state(self, instance):
-        """
-        Alterna o estado de pausa:
-         - remove apenas o botão pause atual do group,
-         - cria um novo pause/resume button e o adiciona no mesmo índice,
-         - mantém demais widgets (evita tela branca).
-        """
-
         idx = None # índice do botão na toolbar
         try:
             # children tem ordem invertida (último adicionado é index 0 na lista children),
@@ -285,12 +381,7 @@ class MainLayout(BoxLayout):
                 print("Erro ao pausar transcriber:", e)
 
             # cria novo botão de 'Retomar'
-            try:
-                new_btn = IconButton(icon_src=self.resume_icon, text="[b]Retomar[/b]")
-            except Exception:
-                # fallback para Button simples caso IconButton dê problema
-                from kivy.uix.button import Button
-                new_btn = Button(text="Retomar")
+            new_btn = IconButton(icon_src=self.resume_icon, text="[b]Retomar[/b]")
 
             self.is_paused = True
 
@@ -314,7 +405,6 @@ class MainLayout(BoxLayout):
             try:
                 new_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
             except Exception:
-                from kivy.uix.button import Button
                 new_btn = Button(text="Pausar")
 
             self.is_paused = False
