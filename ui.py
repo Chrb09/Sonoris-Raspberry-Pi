@@ -77,7 +77,7 @@ class MainLayout(BoxLayout):
         self.transcriber = transcriber # referência o transcriber
         
         # histórico de transcrição (scrollable)
-        history_height = int(FONT_SIZE_HISTORY * 4)
+        history_height = int(FONT_SIZE_HISTORY * 6)
         self.scroll = ScrollView(size_hint=(1, None), height=history_height, do_scroll_x=False, do_scroll_y=True)
         self.history = TranscriptHistory()
         self.scroll.add_widget(self.history)

@@ -6,7 +6,7 @@
   "use_vad": true,
   "vad_mode": 2,
   "device": null,
-  "max_partial_chars": 240,
+  "max_partial_chars": 120,
   "partial_update_min_ms": 80,
   "history_max_lines": 200,
   "partial_reset_ms": 3000,
