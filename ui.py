@@ -177,8 +177,6 @@ class MainLayout(BoxLayout):
         subtitle.bind(texture_size=lambda inst, ts: setattr(inst, "height", ts[1] if ts[1] > 0 else dp(28)))
         box.add_widget(subtitle)
 
-        
-
         # cria botões
         confirm_btn = CommonButton(text="Sim")
         negative_btn = CommonButton(text="Não")

@@ -14,6 +14,7 @@ class CommonButton(Button):
 
     def __init__(self, text="", on_release=None, **kwargs):
         kwargs.setdefault("markup", True)
+        kwargs.setdefault("height", dp(65))
         kwargs.setdefault("size_hint", (1, None))
 
         super().__init__(text=f"[b]{text}[/b]", **kwargs)
