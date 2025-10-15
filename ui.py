@@ -22,7 +22,7 @@ from kivy.graphics import Color, RoundedRectangle
 
 from widgets import Divider, Toolbar, IconButton, TranscriptHistory, toolbar
 from widgets.transcript_history import FONT_SIZE_HISTORY, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
-from utils.colors import parse_color
+from env import FONT_NAME, TEXT_COLOR, WHITE_COLOR, BLUE_COLOR, icons_dir
 
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
@@ -32,32 +32,9 @@ from utils.colors import parse_color
 # TODO consertar o erro do parse_color que não está retornando a cor correta
 # TODO scroll do divider não funciona MUITO BEM na tela lcd
 
-# ------------------------------
-# Configurações Globais do Kivy
-# ------------------------------
-
-BASE_DIR = os.path.dirname(__file__)
-CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
-if os.path.exists(CONFIG_PATH):
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        cfg = json.load(f)
-else:
-    cfg = {}
-
-# configurações de UI (config.json)
-FONT_NAME = cfg.get("fonte", None) 
-TEXT_COLOR = parse_color(cfg.get("color_black", None), default=(1,1,1,1))
-BACKGROUND_COLOR = parse_color(cfg.get("color_background", None), default=(1,1,1,1))
-TOOLBAR_COLOR = parse_color(cfg.get("color_blue", None), default=(0.168, 0.168, 0.168, 1))
-icons_dir = os.path.join(BASE_DIR, "assets", "icons") # caminho dos ícones
-
-# registra fonte customizada se possível
-if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf")):
-    LabelBase.register(name=FONT_NAME, fn_regular=os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf"))
-
 Window.size = (720, 480) # tamanho inicial da janela
 # Window.fullscreen = 'auto' # fullscreen automático
-Window.clearcolor = BACKGROUND_COLOR
+Window.clearcolor = WHITE_COLOR
 
 # ------------------------------
 # Testes de Configuração
@@ -66,8 +43,8 @@ Window.clearcolor = BACKGROUND_COLOR
 print("\nTESTE DE CONFIGURAÇÕES DE UI \n------------------------------")
 
 print("DEBUG: FONT_NAME =", FONT_NAME, type(FONT_NAME)) # teste de fonte
-print("DEBUG: BACKGROUND_COLOR =", BACKGROUND_COLOR, type(BACKGROUND_COLOR)) # teste de cor de fundo da janela
-print("DEBUG: TOOLBAR_COLOR =", TOOLBAR_COLOR, type(TOOLBAR_COLOR)) # teste de cor da toolbar
+print("DEBUG: BACKGROUND_COLOR =", WHITE_COLOR, type(WHITE_COLOR)) # teste de cor de fundo da janela
+print("DEBUG: TOOLBAR_COLOR =", BLUE_COLOR, type(BLUE_COLOR)) # teste de cor da toolbar
 
 print("------------------------------\n")
 
@@ -109,8 +86,8 @@ class MainLayout(BoxLayout):
         self.add_widget(self.partial_label)
 
         # toolbar
-        toolbar = Toolbar(orientation='vertical', bg_color=TOOLBAR_COLOR, height=200, min_height=150, max_height=200)
-        divider = Divider(orientation='horizontal', divider_color=BACKGROUND_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height)
+        toolbar = Toolbar(orientation='vertical', bg_color=BLUE_COLOR, height=200, min_height=150, max_height=200)
+        divider = Divider(orientation='horizontal', divider_color=WHITE_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height)
 
         # adiciona divisor à toolbar
         anchor_div = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, None), height=20) 
@@ -207,12 +184,12 @@ class MainLayout(BoxLayout):
                 background_normal='',  # remove background image para usar background_color
                 background_down='',    
                 background_color=(0, 0, 0, 0),
-                color=BACKGROUND_COLOR,
+                color=WHITE_COLOR,
                 font_size=dp(30)
             )
             # desenha o fundo arredondado com a cor TOOLBAR_COLOR
             with btn.canvas.before:
-                Color(*TOOLBAR_COLOR)
+                Color(*BLUE_COLOR)
                 btn._rounded_rect = RoundedRectangle(pos=btn.pos, size=btn.size, radius=[dp(14)])
                 # atualiza o rounded rect quando o botão mudar de pos/size
                 
@@ -251,7 +228,7 @@ class MainLayout(BoxLayout):
         auto_dismiss=False,
         separator_height=0,
         background = '',
-        background_color = BACKGROUND_COLOR,
+        background_color = WHITE_COLOR,
         )
 
         Clock.schedule_once(lambda dt: setattr(
@@ -339,12 +316,12 @@ class MainLayout(BoxLayout):
                 background_normal='',  # remove background image para usar background_color
                 background_down='',    
                 background_color=(0, 0, 0, 0),
-                color=TOOLBAR_COLOR,
+                color=BLUE_COLOR,
                 font_size=dp(24)
             )
             # desenha o fundo arredondado com a cor TOOLBAR_COLOR
             with btn.canvas.before:
-                Color(*BACKGROUND_COLOR)
+                Color(*WHITE_COLOR)
                 btn._rounded_rect = RoundedRectangle(pos=btn.pos, size=btn.size, radius=[dp(25)])
             # atualiza o rounded rect quando o botão mudar de pos/size
             btn.bind(pos=lambda inst, val: setattr(inst._rounded_rect, "pos", inst.pos))
