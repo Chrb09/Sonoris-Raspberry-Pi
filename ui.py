@@ -254,18 +254,34 @@ class MainLayout(BoxLayout):
                         pass
 
             # re-adiciona os widgets na ordem original
-            for w in self._original_button_order:
-                # evita adicionar widgets que foram destruídos
+            for w in getattr(self, "_original_button_order", local_original):
                 try:
                     if w not in self.button_group.children:
                         self.button_group.add_widget(w)
                 except Exception:
-                    # se falhar, tenta adicionar uma nova instância simples (fallback)
                     try:
                         from kivy.uix.button import Button
                         self.button_group.add_widget(Button(text="??"))
                     except Exception:
                         pass
+
+            # atualiza estado e tenta reiniciar o transcriber
+            try:
+                if getattr(self, "transcriber", None):
+                    self.transcriber.start()
+            except Exception as e:
+                print("Erro ao iniciar transcriber ao restaurar:", e)
+
+            self.is_paused = False
+
+            # assegura que pause_btn referencia o botão atual (se existir na toolbar original)
+            try:
+                for w in self._original_button_order:
+                    if getattr(w, "name", "") == "btn_pause" or w is getattr(self, "pause_btn", None):
+                        self.pause_btn = w
+                        break
+            except Exception:
+                pass
 
         try:
             self.button_group.add_widget(back_btn)
@@ -301,80 +317,118 @@ class MainLayout(BoxLayout):
     # botão de toggle pausar/retomar 
     # TODO padronizar com os demais botoes
     def _update_pause_state(self, instance):
-        idx = None # índice do botão na toolbar
+        # nova abordagem: ao pausar, mostramos um layout de "pausa" com um botão de "Retomar"
+        # que usa _restore_original para restaurar a toolbar original (mesma lógica de _show_categories).
+        local_original = getattr(self, "_original_button_order", None)
+        if not local_original:
+            local_original = list(reversed(list(self.button_group.children)))
+
+        # salva as instâncias removidas para referência (left->right)
         try:
-            # children tem ordem invertida (último adicionado é index 0 na lista children),
-            if self.pause_btn in self.button_group.children:
-                idx = list(self.button_group.children).index(self.pause_btn)
+            current_children = list(self.button_group.children)
         except Exception:
-            idx = None
+            current_children = []
+        self._hidden_buttons = list(reversed(current_children))
 
-        # Remove o botão antigo (se existir)
-        try:
-            self.button_group.remove_widget(self.pause_btn)
-
-            if not hasattr(self, "plus_btn"): # se não tiver o plus_btn, limpa todos os widgets
-                self.button_group.clear_widgets()  # limpa todos os widgets para evitar duplicatas
-        except Exception:
-            pass
-
-        # Alterna estado e cria novo botão 
-        if not getattr(self, "is_paused", False):
-            # passar para estado pausado
-            print("pausado")
+        # função que restaura a toolbar original (reutiliza padrão de _show_categories)
+        def _restore_original(*_args):
+            # limpa tudo primeiro
             try:
-                if self.transcriber:
-                    self.transcriber.stop()
-            except Exception as e:
-                print("Erro ao pausar transcriber:", e)
+                self.button_group.clear_widgets()
+            except Exception:
+                for c in list(self.button_group.children):
+                    try:
+                        self.button_group.remove_widget(c)
+                    except Exception:
+                        pass
 
-            # cria novo botão de 'Retomar'
-            new_btn = IconButton(icon_src=self.resume_icon, text="[b]Retomar[/b]")
-
-            self.is_paused = True
-
-            if not hasattr(self, "plus_btn") and self.is_paused == True:  # adiciona botão de nova conversa se não existir
+            # re-adiciona os widgets na ordem original
+            for w in getattr(self, "_original_button_order", local_original):
                 try:
-                    self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text="[b]Nova conversa[/b]")
-                    self.button_group.add_widget(self.plus_btn)
+                    if w not in self.button_group.children:
+                        self.button_group.add_widget(w)
                 except Exception:
-                    pass
+                    try:
+                        from kivy.uix.button import Button
+                        self.button_group.add_widget(Button(text="??"))
+                    except Exception:
+                        pass
 
-        # passar para estado retomado
-        else:
-            print("retomar")
+            # atualiza estado e tenta reiniciar o transcriber
             try:
-                if self.transcriber:
+                if getattr(self, "transcriber", None):
                     self.transcriber.start()
             except Exception as e:
-                print("Erro ao iniciar transcriber:", e)
-
-            # cria novo botão de 'Pausar'
-            try:
-                new_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
-            except Exception:
-                new_btn = Button(text="Pausar")
+                print("Erro ao iniciar transcriber ao restaurar:", e)
 
             self.is_paused = False
 
-        # bind do novo botão
+            # assegura que pause_btn referencia o botão atual (se existir na toolbar original)
+            try:
+                for w in self._original_button_order:
+                    if getattr(w, "name", "") == "btn_pause" or w is getattr(self, "pause_btn", None):
+                        self.pause_btn = w
+                        break
+            except Exception:
+                pass
+
+        # Se já estamos pausados, apenas restaurar (isso permite que um resume_btn também chame o mesmo)
+        if getattr(self, "is_paused", False):
+            _restore_original()
+            return
+
+        # entrar em estado pausado
+        print("pausado")
         try:
-            new_btn.bind(on_release=self._update_pause_state)
+            if self.transcriber:
+                self.transcriber.stop()
+        except Exception as e:
+            print("Erro ao pausar transcriber:", e)
+
+        # limpa a toolbar atual
+        try:
+            self.button_group.clear_widgets()
+        except Exception:
+            for ch in current_children:
+                try:
+                    self.button_group.remove_widget(ch)
+                except Exception:
+                    pass
+
+        # cria botão de 'Retomar' que usa _restore_original
+        resume_btn = IconButton(icon_src=self.resume_icon, text="[b]Retomar[/b]")
+        try:
+            resume_btn.bind(on_release=lambda *_: _restore_original())
         except Exception:
             pass
 
-        # atualiza referência e insere no mesmo lugar no índice
-        self.pause_btn = new_btn
+        # cria botão 'Nova conversa' e associa limpar histórico
         try:
-            if idx is not None: # insere no mesmo índice se possível
-                self.button_group.add_widget(self.pause_btn, index=idx)
-            else:
-                self.button_group.add_widget(self.pause_btn)
+            plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text="[b]Nova conversa[/b]")
+            plus_btn.name = "plus_btn"
+            # ao clicar, chama _on_clear_history (receberá o widget como parâmetro)
+            plus_btn.bind(on_release=lambda inst: self._on_clear_history(inst))
+            # guarda referência para possível uso futuro
+            self.plus_btn = plus_btn
+        except Exception:
+            plus_btn = None
+
+        # adiciona resume_btn e plus_btn (se criado) à toolbar de pausa
+        try:
+            self.button_group.add_widget(resume_btn)
+            if plus_btn:
+                self.button_group.add_widget(plus_btn)
         except Exception:
             try:
-                self.button_group.add_widget(self.pause_btn)
+                self.button_group.add_widget(resume_btn)
             except Exception:
                 pass
+
+        # marca estado pausado
+        self.is_paused = True
+
+        # atualiza referência do pause_btn para o novo botão de resume (mantém consistência)
+        self.pause_btn = resume_btn
     
     # atualiza text_size do label parcial para quebra automática
     def _update_partial_text_size(self, inst, val):
