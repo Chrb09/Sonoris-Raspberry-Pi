@@ -24,6 +24,7 @@ from widgets import Divider, Toolbar, IconButton, TranscriptHistory, toolbar
 from widgets.transcript_history import FONT_SIZE_HISTORY, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
 from env import FONT_NAME, TEXT_COLOR, WHITE_COLOR, BLUE_COLOR, icons_dir
 from widgets.buttons.common_button import CommonButton
+from widgets.buttons.pill_button import PillButton
 from utils.helpers import enable_private_and_close
 
 # TODO deixar o botão funcional
@@ -275,34 +276,9 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
-        # função para criar botões estilo "pill"
-        def PillButton(text, on_release_callback):
-            btn = Button(
-                text=f"[b]{text}[/b]",
-                markup=True,
-                size_hint=(None, None),
-                height=dp(45),
-                background_normal='',  # remove background image para usar background_color
-                background_down='',    
-                background_color=(0, 0, 0, 0),
-                color=BLUE_COLOR,
-                font_size=dp(24)
-            )
-            # desenha o fundo arredondado com a cor TOOLBAR_COLOR
-            with btn.canvas.before:
-                Color(*WHITE_COLOR)
-                btn._rounded_rect = RoundedRectangle(pos=btn.pos, size=btn.size, radius=[dp(25)])
-            # atualiza o rounded rect quando o botão mudar de pos/size
-            btn.bind(pos=lambda inst, val: setattr(inst._rounded_rect, "pos", inst.pos))
-            btn.bind(size=lambda inst, val: setattr(inst._rounded_rect, "size", inst.size))
-            btn.bind(texture_size=lambda inst, val: setattr(inst, "width", inst.texture_size[0] + dp(40)))
-
-            btn.bind(on_release=on_release_callback)
-            return btn
-
         # TODO cria e adiciona categorias 
         for categoryname in categories:
-            category_btn = PillButton(text=f"[b]{categoryname}[/b]", on_release_callback=lambda *_: print(f"Clicou na categoria {categoryname}"))
+            category_btn = PillButton(text=f"{categoryname}", on_release_callback=lambda *_: print(f"Clicou na categoria {categoryname}"))
 
             # bind do clique: chama handler se existir
             if hasattr(self, "_on_quick_reply_selected"):
