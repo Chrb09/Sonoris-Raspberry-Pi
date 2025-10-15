@@ -89,13 +89,7 @@ class MainLayout(BoxLayout):
         self.add_widget(self.partial_label)
 
         # toolbar
-        toolbar = Toolbar(orientation='vertical', bg_color=BLUE_COLOR, height=200, min_height=150, max_height=200)
-        divider = Divider(orientation='horizontal', divider_color=WHITE_COLOR, target_widget=toolbar, min_height=toolbar.min_height, max_height=toolbar.max_height)
-
-        # adiciona divisor à toolbar
-        anchor_div = AnchorLayout(anchor_x='center', anchor_y='center', size_hint=(1, None), height=20) 
-        anchor_div.add_widget(divider)
-        toolbar.add_widget(anchor_div)
+        toolbar = Toolbar(orientation='vertical', bg_color=BLUE_COLOR, height=140, min_height=140, max_height=140)
 
         self.is_paused = False
         self.pause_icon = os.path.join(icons_dir, "pause.png")
@@ -106,7 +100,7 @@ class MainLayout(BoxLayout):
         self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
         self.pause_btn.name = "btn_pause"
         self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
-        self.private_btn = IconButton(icon_src=os.path.join(icons_dir, "private01.png"), text='[b]Privacidade[/b]')
+        self.private_btn = IconButton(icon_src=os.path.join(icons_dir, "private01.png"), text='[b]Privado?[/b]')
         
         # eventos dos botões
         # self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn"))
@@ -123,6 +117,8 @@ class MainLayout(BoxLayout):
             getattr(self.pause_btn, "height", 60)
         )
         button_group.width = 300 # largura fixa inicial
+        # guarda largura original para poder restaurar depois (usado por _restore_original)
+        self._original_button_group_width = button_group.width
 
         # adiciona botões ao grupo
         # button_group.add_widget(self.plus_btn)
@@ -238,6 +234,14 @@ class MainLayout(BoxLayout):
                 except Exception:
                     pass
 
+        # força alinhamento à esquerda: altera o AnchorLayout pai do button_group
+        parent_anchor = getattr(self.button_group, "parent", None)
+        try:
+            if parent_anchor and hasattr(parent_anchor, "anchor_x"):
+                parent_anchor.anchor_x = "left"
+        except Exception:
+            pass
+
         back_btn = IconButton(icon_src=os.path.join(icons_dir, "back.png"), text='[b]Voltar[/b]')
         back_btn.bind(on_release=lambda *_: _restore_original())
         
@@ -265,21 +269,16 @@ class MainLayout(BoxLayout):
                     except Exception:
                         pass
 
-            # atualiza estado e tenta reiniciar o transcriber
+            # restaura alinhamento do AnchorLayout pai para centralizado
             try:
-                if getattr(self, "transcriber", None):
-                    self.transcriber.start()
-            except Exception as e:
-                print("Erro ao iniciar transcriber ao restaurar:", e)
+                if parent_anchor and hasattr(parent_anchor, "anchor_x"):
+                    parent_anchor.anchor_x = "center"
+            except Exception:
+                pass
 
-            self.is_paused = False
-
-            # assegura que pause_btn referencia o botão atual (se existir na toolbar original)
+            # restaura largura/altura do grupo de botões para centralização original
             try:
-                for w in self._original_button_order:
-                    if getattr(w, "name", "") == "btn_pause" or w is getattr(self, "pause_btn", None):
-                        self.pause_btn = w
-                        break
+                self.button_group.width = getattr(self, "_original_button_group_width", self.button_group.width)
             except Exception:
                 pass
 
@@ -372,6 +371,12 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
+            # restaura largura do button_group para centralizar novamente
+            try:
+                self.button_group.width = getattr(self, "_original_button_group_width", self.button_group.width)
+            except Exception:
+                pass
+
         # Se já estamos pausados, apenas restaurar (isso permite que um resume_btn também chame o mesmo)
         if getattr(self, "is_paused", False):
             _restore_original()
@@ -421,6 +426,31 @@ class MainLayout(BoxLayout):
         except Exception:
             try:
                 self.button_group.add_widget(resume_btn)
+            except Exception:
+                pass
+
+        # Ajusta a largura do grupo para centralizar os dois botões (resume + opcional plus)
+        try:
+            new_children = [w for w in (resume_btn, plus_btn) if w is not None]
+            # largura padrão caso o widget ainda não tenha largura definida
+            default_btn_w = dp(100)
+            spacing = getattr(self.button_group, "spacing", 40) or 0
+            width_sum = 0
+            max_h = 0
+            for b in new_children:
+                bw = getattr(b, "width", None) or default_btn_w
+                bh = getattr(b, "height", None) or self.button_group.height
+                width_sum += bw
+                if bh and bh > max_h:
+                    max_h = bh
+            n = len(new_children) or 1
+            self.button_group.width = int(width_sum + spacing * (n - 1))
+            if max_h:
+                self.button_group.height = max_h
+        except Exception:
+            # fallback: mantém a largura original
+            try:
+                self.button_group.width = getattr(self, "_original_button_group_width", self.button_group.width)
             except Exception:
                 pass
 
