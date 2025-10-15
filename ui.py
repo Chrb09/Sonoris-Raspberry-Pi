@@ -23,6 +23,8 @@ from kivy.graphics import Color, RoundedRectangle
 from widgets import Divider, Toolbar, IconButton, TranscriptHistory, toolbar
 from widgets.transcript_history import FONT_SIZE_HISTORY, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
 from env import FONT_NAME, TEXT_COLOR, WHITE_COLOR, BLUE_COLOR, icons_dir
+from widgets.buttons.common_button import CommonButton
+from utils.helpers import enable_private_and_close
 
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
@@ -174,53 +176,18 @@ class MainLayout(BoxLayout):
         subtitle.bind(width=lambda inst, w: setattr(inst, "text_size", (w, None)))
         subtitle.bind(texture_size=lambda inst, ts: setattr(inst, "height", ts[1] if ts[1] > 0 else dp(28)))
         box.add_widget(subtitle)
-        
-        def CommonButton(text, on_release_callback):
-            btn = Button(
-                text=f"[b]{text}[/b]",
-                markup=True,
-                size_hint=(1, None),
-                height=dp(65),
-                background_normal='',  # remove background image para usar background_color
-                background_down='',    
-                background_color=(0, 0, 0, 0),
-                color=WHITE_COLOR,
-                font_size=dp(30)
-            )
-            # desenha o fundo arredondado com a cor TOOLBAR_COLOR
-            with btn.canvas.before:
-                Color(*BLUE_COLOR)
-                btn._rounded_rect = RoundedRectangle(pos=btn.pos, size=btn.size, radius=[dp(14)])
-                # atualiza o rounded rect quando o botão mudar de pos/size
-                
-            btn.bind(pos=lambda inst, val: setattr(inst._rounded_rect, "pos", inst.pos))
-            btn.bind(size=lambda inst, val: setattr(inst._rounded_rect, "size", inst.size))
 
-            btn.bind(on_release=on_release_callback)
-            return btn
+        
 
         # cria botões
-        confirm_btn = CommonButton("Sim", lambda *_: enable_private_and_close(self))
-        negative_btn = CommonButton("Não", lambda *_: popup.dismiss())
+        confirm_btn = CommonButton(text="Sim")
+        negative_btn = CommonButton(text="Não")
 
         btn_box = BoxLayout(orientation='horizontal', spacing=15, size_hint=(1, None))
         btn_box.add_widget(confirm_btn)
         btn_box.add_widget(negative_btn)
         box.add_widget(btn_box)
 
-        def enable_private_and_close(context_self):
-            print ("Ativando modo privado e fechando popup")
-            # context_self.private_mode = True
-            # context_self.transcript_history.clear()
-
-            try:
-                context_self.private_mode = True
-            except Exception:
-                pass
-            popup.dismiss()
-
-        anchor.add_widget(box)
-        
         popup = Popup(
         title='',
         content=anchor,
@@ -230,7 +197,6 @@ class MainLayout(BoxLayout):
         background = '',
         background_color = WHITE_COLOR,
         )
-
         Clock.schedule_once(lambda dt: setattr(
             box,
             "height",
@@ -238,7 +204,12 @@ class MainLayout(BoxLayout):
             + ((box.padding[1] + box.padding[3]) if isinstance(box.padding, (list, tuple)) else (box.padding * 2))
             + 10
         ), 0)
-        
+        anchor.add_widget(box)
+
+        self.popup = popup # guarda referência para fechar depois
+        confirm_btn.bind(on_release=lambda *_: enable_private_and_close(self))
+        negative_btn.bind(on_release=lambda *_: self.popup.dismiss())
+
         popup.open()
     
     # mostra categorias de resposta rápidas
