@@ -24,3 +24,15 @@ icons_dir = os.path.join(BASE_DIR, "assets", "icons")
 # registra fonte customizada se possível
 if FONT_NAME and os.path.exists(os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf")):
     LabelBase.register(name=FONT_NAME, fn_regular=os.path.join(BASE_DIR, "fonts", f"{FONT_NAME}.ttf"))
+
+# ------------------------------
+# Testes de Configuração
+# ------------------------------
+
+print("\nTESTE DE CONFIGURAÇÕES DE UI \n------------------------------")
+
+print("DEBUG: FONT_NAME =", FONT_NAME, type(FONT_NAME)) # teste de fonte
+print("DEBUG: BACKGROUND_COLOR =", WHITE_COLOR, type(WHITE_COLOR)) # teste de cor de fundo da janela
+print("DEBUG: TOOLBAR_COLOR =", BLUE_COLOR, type(BLUE_COLOR)) # teste de cor da toolbar
+
+print("------------------------------\n")
