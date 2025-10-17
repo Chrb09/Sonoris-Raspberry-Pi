@@ -205,6 +205,16 @@ class MainLayout(BoxLayout):
             # fallback: calcula localmente sem atribuir a self._original_button_order
             local_original = list(reversed(list(self.button_group.children)))
 
+        # salva state atual para restaurar depois
+        try:
+            self._saved_button_group_size_hint = tuple(self.button_group.size_hint)
+        except Exception:
+            self._saved_button_group_size_hint = getattr(self, "_original_button_group_size_hint", None)
+        try:
+            self._saved_button_group_width = getattr(self.button_group, "width", None)
+        except Exception:
+            self._saved_button_group_width = None
+
         # limpa a toolbar primeiro
         try:
             current_children = list(self.button_group.children)
@@ -236,6 +246,11 @@ class MainLayout(BoxLayout):
             pass
 
         back_btn = IconButton(icon_src=os.path.join(icons_dir, "back.png"), text='[b]Voltar[/b]')
+        try:
+            back_btn.size_hint_x = None
+            back_btn.width = dp(100)
+        except Exception:
+            pass
         back_btn.bind(on_release=lambda *_: _restore_original())
         
         # restaura a barra original
@@ -271,7 +286,15 @@ class MainLayout(BoxLayout):
 
             # restaura largura/altura do grupo de botões para centralização original
             try:
-                self.button_group.width = getattr(self, "_original_button_group_width", self.button_group.width)
+                # restaura size_hint e width salvos
+                if hasattr(self, "_saved_button_group_size_hint") and self._saved_button_group_size_hint is not None:
+                    self.button_group.size_hint = self._saved_button_group_size_hint
+                else:
+                    self.button_group.size_hint = (None, None)
+                if getattr(self, "_saved_button_group_width", None) is not None:
+                    self.button_group.width = self._saved_button_group_width
+                else:
+                    self.button_group.width = getattr(self, "_original_button_group_width", self.button_group.width)
                 self.button_group.spacing = 40
             except Exception:
                 pass
@@ -285,8 +308,50 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
+        # --- nova lógica: colocar as categorias dentro de um ScrollView horizontal ---
+        try:
+            # expandir button_group para ocupar espaço restante (preencher até a outra borda)
+            try:
+                self.button_group.size_hint = (1, None)
+                # usa largura do pai como referência, fallback para Window.width
+                target_width = getattr(parent_anchor, "width", None) or Window.width
+                self.button_group.width = target_width
+            except Exception:
+                pass
+
+            # ScrollView que ocupará o espaço restante da button_group
+            cat_scroll = ScrollView(do_scroll_x=True, do_scroll_y=False, size_hint=(1, None), height=self.button_group.height)
+            # BoxLayout interno com largura dinâmica (size_hint_x=None) para permitir rolagem
+            inner = BoxLayout(orientation='horizontal', size_hint_x=None, height=self.button_group.height, spacing=10)
+            # manter a largura do inner igual ao mínimo necessário (soma das larguras dos filhos)
+            try:
+                inner.bind(minimum_width=inner.setter('width'))
+            except Exception:
+                # fallback simples: não faz bind se propriedade não existir
+                pass
+
+            cat_scroll.add_widget(inner)
+
+            # adiciona o ScrollView ao grupo (depois do back_btn)
+            try:
+                self.button_group.add_widget(cat_scroll)
+            except Exception:
+                try:
+                    self.button_group.add_widget(cat_scroll)
+                except Exception:
+                    pass
+        except Exception as e:
+            print("Erro ao criar scroll para categorias:", e)
+
         for categoryname in categories:
+            # garantir largura fixa/relativa para cada botão de categoria para que o inner possa calcular mínimo
             category_btn = PillButton(text=f"{categoryname}", on_release_callback=lambda *_: print(f"Clicou na categoria {categoryname}"), pos_hint={'center_y': 0.5})
+            # set size_hint_x to None so inner.minimum_width calculation works reliably
+            try:
+                category_btn.size_hint_x = None
+                category_btn.width = dp(140)
+            except Exception:
+                pass
 
             # bind do clique: chama handler se existir
             if hasattr(self, "_on_quick_reply_selected"):
@@ -297,11 +362,12 @@ class MainLayout(BoxLayout):
                 category_btn.bind(on_release=lambda inst, c=categoryname: print("clicou na categoria", c))
 
             try:
-                self.button_group.add_widget(category_btn)
+                # adiciona ao inner (rolável)
+                inner.add_widget(category_btn)
             except Exception:
                 # fallback simples
                 try:
-                    self.button_group.add_widget(category_btn)
+                    inner.add_widget(category_btn)
                 except Exception:
                     pass
     
