@@ -434,6 +434,45 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
+            # --- restaura partial_label ao sair da pausa (se salvamos) ---
+            try:
+                if hasattr(self, "_saved_partial_props") and self._saved_partial_props:
+                    size_hint, height, opacity = self._saved_partial_props
+                    try:
+                        self.partial_label.size_hint = size_hint
+                    except Exception:
+                        pass
+                    try:
+                        if height is not None:
+                            self.partial_label.height = height
+                    except Exception:
+                        pass
+                    try:
+                        self.partial_label.opacity = opacity if opacity is not None else 1
+                    except Exception:
+                        pass
+                    # limpa o saved state
+                    self._saved_partial_props = None
+            except Exception:
+                pass
+
+            # --- restaura scroll/history ao sair da pausa (se salvamos) ---
+            try:
+                if hasattr(self, "_saved_scroll_props") and self._saved_scroll_props:
+                    s_size_hint, s_height = self._saved_scroll_props
+                    try:
+                        self.scroll.size_hint = s_size_hint
+                    except Exception:
+                        pass
+                    try:
+                        if s_height is not None:
+                            self.scroll.height = s_height
+                    except Exception:
+                        pass
+                    self._saved_scroll_props = None
+            except Exception:
+                pass
+
         # Se já estamos pausados, apenas restaurar
         if getattr(self, "is_paused", False):
             _restore_original()
@@ -446,6 +485,61 @@ class MainLayout(BoxLayout):
                 self.transcriber.stop()
         except Exception as e:
             print("Erro ao pausar transcriber:", e)
+
+        # --- salva e oculta partial_label para que desapareça na pausa ---
+        try:
+            # salva (size_hint, height, opacity)
+            try:
+                saved_size_hint = tuple(self.partial_label.size_hint)
+            except Exception:
+                saved_size_hint = getattr(self.partial_label, "size_hint", (1, 1))
+            try:
+                saved_height = getattr(self.partial_label, "height", None)
+            except Exception:
+                saved_height = None
+            try:
+                saved_opacity = getattr(self.partial_label, "opacity", 1)
+            except Exception:
+                saved_opacity = 1
+            self._saved_partial_props = (saved_size_hint, saved_height, saved_opacity)
+
+            # --- salva também propriedades do history ScrollView para restaurar depois ---
+            try:
+                saved_scroll_size_hint = tuple(self.scroll.size_hint)
+            except Exception:
+                saved_scroll_size_hint = getattr(self.scroll, "size_hint", (1, None))
+            try:
+                saved_scroll_height = getattr(self.scroll, "height", None)
+            except Exception:
+                saved_scroll_height = None
+            self._saved_scroll_props = (saved_scroll_size_hint, saved_scroll_height)
+
+            # oculta partial_label sem deixar espaço: size_hint_y=None e height=0, opacity=0
+            try:
+                self.partial_label.size_hint = (1, None)
+            except Exception:
+                pass
+            try:
+                self.partial_label.height = 0
+            except Exception:
+                pass
+            try:
+                self.partial_label.opacity = 0
+            except Exception:
+                pass
+
+            # faz o history ScrollView ocupar o espaço restante (expandir verticalmente)
+            try:
+                self.scroll.size_hint = (1, 1)
+                # limpa height override para permitir size_hint tomar efeito (se possível)
+                try:
+                    self.scroll.height = None
+                except Exception:
+                    pass
+            except Exception:
+                pass
+        except Exception:
+            pass
 
         # limpa a toolbar atual
         try:
@@ -469,7 +563,8 @@ class MainLayout(BoxLayout):
             plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text="[b]Nova conversa[/b]")
             plus_btn.name = "plus_btn"
             # ao clicar, chama _on_clear_history (receberá o widget como parâmetro)
-            plus_btn.bind(on_release=lambda inst: self._on_clear_history(inst))
+            # chama _on_clear_history e depois restaura a toolbar original
+            plus_btn.bind(on_release=lambda inst: (self._on_clear_history(inst), _restore_original()))
             # guarda referência para possível uso futuro
             self.plus_btn = plus_btn
         except Exception:
