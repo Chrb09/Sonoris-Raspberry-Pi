@@ -19,10 +19,8 @@ from widgets.transcript_history import FONT_SIZE_HISTORY, MAX_PARTIAL_CHARS, PAR
 from env import FONT_NAME, TEXT_COLOR, WHITE_COLOR, BLUE_COLOR, icons_dir
 from widgets.buttons.common_button import CommonButton
 from widgets.buttons.pill_button import PillButton
-from utils.helpers import enable_private_and_close
 
 # TODO otimizar o codigo
-# TODO melhorar o design
 # TODO adicionar os widgets
 # TODO consertar o erro do parse_color que não está retornando a cor correta
 
@@ -66,7 +64,10 @@ class MainLayout(BoxLayout):
         
         self._partial_reset_ev = None
         self.transcriber = transcriber # referência o transcriber
-        
+
+        # novo estado de modo privado (persistente enquanto a instância existir)
+        self.private_mode = False
+
         # histórico de transcrição (scrollable)
         history_height = int(FONT_SIZE_HISTORY * 6)
         self.scroll = ScrollView(size_hint=(1, None), height=history_height, do_scroll_x=False, do_scroll_y=True)
@@ -90,12 +91,23 @@ class MainLayout(BoxLayout):
         self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
         self.pause_btn.name = "btn_pause"
         self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
-        self.private_btn = IconButton(icon_src=os.path.join(icons_dir, "private01.png"), text='[b]Privado?[/b]')
-        
+        # cria private_btn com aparência baseada em self.private_mode
+        init_private_icon = os.path.join(icons_dir, "private02.png") if self.private_mode else os.path.join(icons_dir, "private01.png")
+        init_private_text = "[b]Privado[/b]" if self.private_mode else "[b]Privado?[/b]"
+        self.private_btn = IconButton(icon_src=init_private_icon, text=init_private_text)
+
         # eventos dos botões
         self.pause_btn.bind(on_release=self._update_pause_state)
         self.response_btn.bind(on_release=self._show_categories)
-        self.private_btn.bind(on_release=self.show_private_popup)
+        # somente liga o handler de popup se o modo privado não estiver ativo
+        if not self.private_mode:
+            self.private_btn.bind(on_release=self.show_private_popup)
+        else:
+            try:
+                self.private_btn.disabled = True
+                self.private_btn.opacity = 0.8
+            except Exception:
+                pass
 
         button_group = BoxLayout(orientation='horizontal', spacing=40, size_hint=(None, None))
         self.button_group = button_group
@@ -138,7 +150,153 @@ class MainLayout(BoxLayout):
         self._hidden_buttons = []
         self._buttons_hidden = False
 
+        # aplica aparência correta ao private_btn (caso tenha sido alterado antes)
+        try:
+            self._apply_private_mode_to_btn()
+        except Exception:
+            pass
+
+    # novo: aplica ícone/texto de acordo com self.private_mode
+    def _apply_private_mode_to_btn(self):
+        try:
+            btn = getattr(self, "private_btn", None)
+            if not btn:
+                 return
+             # decide valores
+            if getattr(self, "private_mode", False):
+                 icon = os.path.join(icons_dir, "private02.png")
+                 txt = "[b]Privado[/b]"
+            else:
+                 icon = os.path.join(icons_dir, "private01.png")
+                 txt = "[b]Privado?[/b]"
+
+
+            # aplica no widget principal (IconButton)
+            try:
+                 btn.icon_src = icon
+            except Exception:
+                 pass
+            try:
+                 btn.text = txt
+            except Exception:
+                 pass
+             # força markup se suportado
+            try:
+                 btn.markup = True
+            except Exception:
+                 pass
+
+            # ativa/desativa interação (quando privado = True, desabilita clique)
+            try:
+                disabled = bool(getattr(self, "private_mode", False))
+                btn.disabled = disabled
+                # pequena alteração visual quando desabilitado
+                btn.opacity = 0.8 if disabled else 1.0
+            except Exception:
+                pass
+
+             # atualiza qualquer Label filho (caso o IconButton use um Label interno)
+            try:
+                for child in getattr(btn, "children", []):
+                    try:
+                        if isinstance(child, Label):
+                            child.text = txt
+                            try:
+                                child.markup = True
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    # atualiza o texto parcial
+    def set_partial(self, text):
+        self.partial_label.text = text
+        # reseta o timer se já houver um agendado
+        if self._partial_reset_ev:
+            try:
+                self._partial_reset_ev.cancel()
+            except Exception:
+                pass
+            self._partial_reset_ev = None
+
+        # agenda reset se o texto não for vazio ou "Aguardando..."
+        txt = (text or "").strip()
+        if txt and txt.lower() != "aguardando..." and PARTIAL_RESET_MS > 0:
+            self._partial_reset_ev = Clock.schedule_once(lambda dt: self._reset_partial(), PARTIAL_RESET_MS / 1000.0)
+
+    # reset do texto parcial
+    def _reset_partial(self):
+        self._partial_reset_ev = None
+        self.partial_label.text = "Aguardando..."
+
+    # limpa o histórico e reseta o parcial
+    def _on_clear_history(self, instance):
+        self.history.clear_all()
+        self._reset_partial()
+
+    def enable_private_and_close(self, context_self):
+        print ("Ativando modo privado e fechando popup")
+        # ativa modo privado
+        try:
+            context_self.private_mode = True
+        except Exception as e:
+            print("Erro ao ativar private_mode:", e)
+
+        # atualiza ícone do botão private_btn para private02.png
+        try:
+            context_self._apply_private_mode_to_btn()
+        except Exception as e:
+            # fallback direto: atualiza icon e texto no botão e em labels filhos
+            try:
+                btn = getattr(context_self, 'private_btn', None)
+                if btn:
+                    try:
+                        btn.icon_src = os.path.join(icons_dir, "private02.png")
+                    except Exception:
+                        pass
+                    try:
+                        btn.text = "[b]Privado[/b]"
+                    except Exception:
+                        pass
+                    try:
+                        btn.markup = True
+                    except Exception:
+                        pass
+                    try:
+                        btn.disabled = True
+                        btn.opacity = 0.8
+                    except Exception:
+                        pass
+                    try:
+                        for child in getattr(btn, "children", []):
+                            try:
+                                if isinstance(child, Label):
+                                    child.text = "[b]Privado[/b]"
+                                    try:
+                                        child.markup = True
+                                    except Exception:
+                                        pass
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+            except Exception:
+                print("Erro ao atualizar o private_btn:", e)
+
+        # fecha popup
+        try:
+            context_self.popup.dismiss()
+        except Exception as e:
+            print("Erro ao fechar popup:", e)
+
     def show_private_popup(self, instance):
+        # não faz nada se o modo privado já estiver ativo (botão deve estar desativado)
+        if getattr(self, "private_mode", False):
+            return
         print("Clicou no private_btn - mostrar popup de privacidade")
 
         anchor = AnchorLayout(anchor_x='center', anchor_y='center')
@@ -190,7 +348,7 @@ class MainLayout(BoxLayout):
         anchor.add_widget(box)
 
         self.popup = popup # guarda referência para fechar depois
-        confirm_btn.bind(on_release=lambda *_: enable_private_and_close(self))
+        confirm_btn.bind(on_release=lambda *_: self.enable_private_and_close(self))
         negative_btn.bind(on_release=lambda *_: self.popup.dismiss())
 
         popup.open()
@@ -299,6 +457,12 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
+            # aplica aparência do private_btn após restaurar widgets (mantém persistência)
+            try:
+                self._apply_private_mode_to_btn()
+            except Exception:
+                pass
+
         try:
             self.button_group.add_widget(back_btn)
         except Exception:
@@ -307,7 +471,6 @@ class MainLayout(BoxLayout):
                 self.button_group.add_widget(back_btn)
             except Exception:
                 pass
-
         # --- nova lógica: colocar as categorias dentro de um ScrollView horizontal ---
         try:
             # expandir button_group para ocupar espaço restante (preencher até a outra borda)
@@ -473,6 +636,12 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
+            # aplica aparência do private_btn após restaurar widgets (mantém persistência)
+            try:
+                self._apply_private_mode_to_btn()
+            except Exception:
+                pass
+
         # Se já estamos pausados, apenas restaurar
         if getattr(self, "is_paused", False):
             _restore_original()
@@ -562,9 +731,8 @@ class MainLayout(BoxLayout):
         try:
             plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text="[b]Nova conversa[/b]")
             plus_btn.name = "plus_btn"
-            # ao clicar, chama _on_clear_history (receberá o widget como parâmetro)
-            # chama _on_clear_history e depois restaura a toolbar original
-            plus_btn.bind(on_release=lambda inst: (self._on_clear_history(inst), _restore_original()))
+            # ao clicar, chama _on_clear_history, desativa modo privado e depois restaura a toolbar original
+            plus_btn.bind(on_release=lambda inst: (self._on_clear_history(inst), self._disable_private_mode(), _restore_original()))
             # guarda referência para possível uso futuro
             self.plus_btn = plus_btn
         except Exception:
@@ -624,31 +792,41 @@ class MainLayout(BoxLayout):
             Clock.schedule_once(lambda dt: self.scroll.scroll_to(self.history.lines[-1]))
         Clock.schedule_once(lambda dt: self.set_partial("Aguardando..."), 0.01) # limpa o parcial após adicionar final
     
-    # atualiza o texto parcial
-    def set_partial(self, text):
-        self.partial_label.text = text
-        # reseta o timer se já houver um agendado
-        if self._partial_reset_ev:
-            try:
-                self._partial_reset_ev.cancel()
-            except Exception:
-                pass
-            self._partial_reset_ev = None
+    # desativa o modo privado e restaura o botão private_btn ao estado inicial
+    def _disable_private_mode(self):
+        try:
+            self.private_mode = False
+        except Exception:
+            pass
+        # aplica aparência padrão (icon/text/disabled/opacidade)
+        try:
+            self._apply_private_mode_to_btn()
+        except Exception:
+            pass
 
-        # agenda reset se o texto não for vazio ou "Aguardando..."
-        txt = (text or "").strip()
-        if txt and txt.lower() != "aguardando..." and PARTIAL_RESET_MS > 0:
-            self._partial_reset_ev = Clock.schedule_once(lambda dt: self._reset_partial(), PARTIAL_RESET_MS / 1000.0)
-
-    # reset do texto parcial
-    def _reset_partial(self):
-        self._partial_reset_ev = None
-        self.partial_label.text = "Aguardando..."
-
-    # limpa o histórico e reseta o parcial
-    def _on_clear_history(self, instance):
-        self.history.clear_all()
-        self._reset_partial()
+        # garante que o botão esteja habilitado e com o handler correto
+        try:
+            btn = getattr(self, "private_btn", None)
+            if btn:
+                try:
+                    btn.disabled = False
+                except Exception:
+                    pass
+                try:
+                    btn.opacity = 1.0
+                except Exception:
+                    pass
+                # remove binding antiga (se existir) e rebinda ao handler de popup
+                try:
+                    btn.unbind(on_release=self.show_private_popup)
+                except Exception:
+                    pass
+                try:
+                    btn.bind(on_release=self.show_private_popup)
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
 # main app do kivy
 class TranscriberApp(App):
@@ -661,6 +839,7 @@ class TranscriberApp(App):
     # nome do aplicativo
     def build(self):
         self.title = "Transcrição de Voz Sonoris"
+        self.icon = os.path.join(icons_dir, "app_icon.png")
         self.layout = MainLayout(self.transcriber)
         return self.layout
     
