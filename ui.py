@@ -21,13 +21,10 @@ from widgets.buttons.common_button import CommonButton
 from widgets.buttons.pill_button import PillButton
 from utils.helpers import enable_private_and_close
 
-# TODO deixar o botão funcional
 # TODO otimizar o codigo
 # TODO melhorar o design
-# TODO adicionar todas as imagens dos botões
 # TODO adicionar os widgets
 # TODO consertar o erro do parse_color que não está retornando a cor correta
-# TODO scroll do divider não funciona MUITO BEM na tela lcd
 
 Window.size = (720, 480) # tamanho inicial da janela
 # Window.fullscreen = 'auto' # fullscreen automático
@@ -225,6 +222,11 @@ class MainLayout(BoxLayout):
                 except Exception:
                     pass
 
+        try:
+            self.button_group.spacing = 15
+        except Exception:
+            pass
+
         # força alinhamento à esquerda: altera o AnchorLayout pai do button_group
         parent_anchor = getattr(self.button_group, "parent", None)
         try:
@@ -270,6 +272,7 @@ class MainLayout(BoxLayout):
             # restaura largura/altura do grupo de botões para centralização original
             try:
                 self.button_group.width = getattr(self, "_original_button_group_width", self.button_group.width)
+                self.button_group.spacing = 40
             except Exception:
                 pass
 
@@ -282,9 +285,8 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
-        # TODO cria e adiciona categorias 
         for categoryname in categories:
-            category_btn = PillButton(text=f"{categoryname}", on_release_callback=lambda *_: print(f"Clicou na categoria {categoryname}"))
+            category_btn = PillButton(text=f"{categoryname}", on_release_callback=lambda *_: print(f"Clicou na categoria {categoryname}"), pos_hint={'center_y': 0.5})
 
             # bind do clique: chama handler se existir
             if hasattr(self, "_on_quick_reply_selected"):
@@ -304,7 +306,6 @@ class MainLayout(BoxLayout):
                     pass
     
     # botão de toggle pausar/retomar 
-    # TODO padronizar com os demais botoes
     def _update_pause_state(self, instance):
         # nova abordagem: ao pausar, mostramos um layout de "pausa" com um botão de "Retomar"
         # que usa _restore_original para restaurar a toolbar original (mesma lógica de _show_categories).

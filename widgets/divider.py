@@ -5,7 +5,7 @@ from kivy.metrics import dp
 from kivy.graphics import Color, RoundedRectangle
 
 # ------------------------------
-# Divider
+# Divider - NÃO USADO NO MOMENTO
 # ------------------------------
 
 class Divider(Widget):
