@@ -15,8 +15,9 @@ try:
 except Exception:
     BLE_AVAILABLE = False
 
-from transcriber import Transcriber
-from ui import TranscriberApp
+# REMOVED top-level imports of Transcriber/TranscriberApp to avoid Kivy creating a window at import time
+# from transcriber import Transcriber
+# from ui import TranscriberApp
 
 BASE_DIR = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -60,7 +61,7 @@ def run():
         # inicia o BLE server numa thread (vai chamar on_ble_start/stop) se disponível
         if BLE_AVAILABLE:
             ble_stop_event, _ = start_ble_server_in_thread(on_start_cb=on_ble_start, on_stop_cb=on_ble_stop)
-            print("Aguardando conexão BLE. Abra o app e envie 'START' para iniciar.")
+            print("Aguardando conexão Bluetooth, conecte pelo app Sonoris no celular...")
         else:
             print("[MAIN] BLE não disponível/encontrado. Ative SKIP_BLE=True para pular o BLE em ambiente de teste.")
             ble_stop_event = threading.Event()
@@ -70,6 +71,11 @@ def run():
             # espera até o celular enviar "START" (ou até que SKIP_BLE já tenha setado o evento)
             ble_connected_event.wait()
             print("[MAIN] Conexão detectada (ou modo teste): iniciando Transcriber + UI")
+
+            # --- LAZY IMPORTS: só importar Transcriber e UI depois que a conexão foi estabelecida ---
+            from transcriber import Transcriber
+            from ui import TranscriberApp
+            # ------------------------------------------------------------------------------
 
             # cria instâncias
             transcriber = Transcriber(cfg)
