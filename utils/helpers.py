@@ -2,6 +2,9 @@
 # funções auxiliares diversas
 
 # limita valor entre 0.0 e 1.0
+import os
+
+
 def _clamp(v, lo=0.0, hi=1.0):
     try:
         fv = float(v)
@@ -18,6 +21,18 @@ def enable_private_and_close(context_self):
     except Exception as e:
         print("Erro ao ativar private_mode:", e)
     
+    # atualiza ícone do botão private_btn para private02.png
+    try:
+        btn = getattr(context_self, 'private_btn', None)
+        if btn:
+            try:
+                btn.icon_src = os.path.join(icons_dir, "private02.png")
+
+            except Exception:
+                pass
+    except Exception as e:
+        print("Erro ao atualizar ícone do private_btn:", e)
+
     # fecha popup
     try:
         context_self.popup.dismiss()

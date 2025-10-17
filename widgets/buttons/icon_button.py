@@ -44,6 +44,15 @@ class IconButton(ButtonBehavior, BoxLayout):
         self.add_widget(self._image_canvas)
         self.add_widget(self._label)
 
+        # garante que o image canvas comece com a fonte correta
+        try:
+            self._image_canvas.source = self.icon_src
+        except Exception:
+            pass
+        
+        # quando icon_src mudar, atualiza a source do image canvas (bind sem criar função nomeada)
+        self.bind(icon_src=lambda inst, val: setattr(getattr(self, "_image_canvas", None), "source", val))
+
         # binds para atualizar rect quando mover/trocar tamanho e quando mudar cores
         self.bind(pos=self._update_children_pos, size=self._update_children_pos,
                   collapsed=self._update_collapsed,

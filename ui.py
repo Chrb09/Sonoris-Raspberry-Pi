@@ -29,12 +29,27 @@ from utils.helpers import enable_private_and_close
 
 # TODO deixar o botão funcional
 # TODO otimizar o codigo
+# TODO melhorar o design
+# TODO adicionar todas as imagens dos botões
 # TODO adicionar os widgets
 # TODO consertar o erro do parse_color que não está retornando a cor correta
+# TODO scroll do divider não funciona MUITO BEM na tela lcd
 
-Window.size = (720, 480)
+Window.size = (720, 480) # tamanho inicial da janela
 # Window.fullscreen = 'auto' # fullscreen automático
 Window.clearcolor = WHITE_COLOR
+
+# ------------------------------
+# Testes de Configuração
+# ------------------------------
+
+print("\nTESTE DE CONFIGURAÇÕES DE UI \n------------------------------")
+
+print("DEBUG: FONT_NAME =", FONT_NAME, type(FONT_NAME)) # teste de fonte
+print("DEBUG: BACKGROUND_COLOR =", WHITE_COLOR, type(WHITE_COLOR)) # teste de cor de fundo da janela
+print("DEBUG: TOOLBAR_COLOR =", BLUE_COLOR, type(BLUE_COLOR)) # teste de cor da toolbar
+
+print("------------------------------\n")
 
 # ------------------------------
 # Widgets e Layouts
@@ -81,12 +96,14 @@ class MainLayout(BoxLayout):
         self.resume_icon = os.path.join(icons_dir, "resume.png")
 
         # botões na toolbar
+        # self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
         self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
         self.pause_btn.name = "btn_pause"
         self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
         self.private_btn = IconButton(icon_src=os.path.join(icons_dir, "private01.png"), text='[b]Privado?[/b]')
         
         # eventos dos botões
+        # self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn"))
         self.pause_btn.bind(on_release=self._update_pause_state)
         self.response_btn.bind(on_release=self._show_categories)
         self.private_btn.bind(on_release=self.show_private_popup)
@@ -104,6 +121,7 @@ class MainLayout(BoxLayout):
         self._original_button_group_width = button_group.width
 
         # adiciona botões ao grupo
+        # button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)
         button_group.add_widget(self.response_btn)
         button_group.add_widget(self.private_btn)
@@ -174,7 +192,6 @@ class MainLayout(BoxLayout):
         background = '',
         background_color = WHITE_COLOR,
         )
-
         Clock.schedule_once(lambda dt: setattr(
             box,
             "height",
@@ -194,12 +211,6 @@ class MainLayout(BoxLayout):
     def _show_categories(self, instance):
         print("Clicou no response_btn - mostrar categorias de resposta")
         categories = ["Positiva", "Negativa", "Neutras", "Perguntas"]
-        quick_replies = {
-            "Positiva": ["Ótimo!", "Excelente!", "Muito bom!", "Perfeito!", "Amei!"],
-            "Negativa": ["Ruim", "Péssimo", "Não gostei", "Horrível", "Decepcionante"],
-            "Neutras": ["Ok", "Certo", "Entendi", "Compreendo", "Tudo bem"],
-            "Perguntas": ["Pode repetir?", "O que disse?", "Como assim?", "Pode explicar?", "Não entendi"]
-        }
 
         local_original = getattr(self, "_original_button_order", None)
         if not local_original:
@@ -290,7 +301,7 @@ class MainLayout(BoxLayout):
             elif hasattr(self, "handle_quick_reply"):
                 category_btn.bind(on_release=lambda inst, c=categoryname: self.handle_quick_reply(c))
             else:
-                category_btn.bind(on_release=lambda inst, c=categoryname: print("clicou na categoria", c))
+                category_btn.bind(on_release=lambda inst, c=categoryname: print("else clicou na categoria", c))
 
             try:
                 self.button_group.add_widget(category_btn)
@@ -300,7 +311,6 @@ class MainLayout(BoxLayout):
                     self.button_group.add_widget(category_btn)
                 except Exception:
                     pass
-
     
     # botão de toggle pausar/retomar 
     # TODO padronizar com os demais botoes
