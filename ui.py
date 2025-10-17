@@ -356,13 +356,28 @@ class MainLayout(BoxLayout):
     # mostra categorias de resposta rápidas
     def _show_categories(self, instance):
         print("Clicou no response_btn - mostrar categorias de resposta")
-        categories = ["Positiva", "Negativa", "Neutras", "Perguntas"]
-
+        # mapa de categorias -> lista de respostas rápidas (editar/expandir conforme necessário)
+        QUICK_REPLIES = {
+            "Positiva": [
+                "Excelente!", "Muito bom!", "Aprovado.", "Perfeito, obrigado."
+            ],
+            "Negativa": [
+                "Não atende.", "Rejeitado.", "Problema grave.", "Rever por favor."
+            ],
+            "Neutras": [
+                "Notado.", "Ok.", "Recebido.", "Sem alterações."
+            ],
+            "Perguntas": [
+                "Pode explicar mais?", "Qual o prazo?", "Quem será responsável?", "Onde encontro isso?"
+            ]
+        }
+        categories = list(QUICK_REPLIES.keys())
+ 
         local_original = getattr(self, "_original_button_order", None)
         if not local_original:
             # fallback: calcula localmente sem atribuir a self._original_button_order
             local_original = list(reversed(list(self.button_group.children)))
-
+ 
         # salva state atual para restaurar depois
         try:
             self._saved_button_group_size_hint = tuple(self.button_group.size_hint)
@@ -409,7 +424,27 @@ class MainLayout(BoxLayout):
             back_btn.width = dp(100)
         except Exception:
             pass
-        back_btn.bind(on_release=lambda *_: _restore_original())
+        # controla view atual (categories | replies). Usamos dict para closure mutável.
+        current_view = {"view": None}
+
+        # ação única do botão "Voltar": decide para onde ir dependendo da view atual
+        def back_action(*_args):
+            try:
+                if current_view.get("view") == "replies":
+                    show_categories_view()
+                else:
+                    _restore_original()
+            except Exception:
+                try:
+                    _restore_original()
+                except Exception:
+                    pass
+
+        # bind único do botão voltar
+        try:
+            back_btn.bind(on_release=back_action)
+        except Exception:
+            pass
         
         # restaura a barra original
         def _restore_original(*_args):
@@ -506,33 +541,106 @@ class MainLayout(BoxLayout):
         except Exception as e:
             print("Erro ao criar scroll para categorias:", e)
 
-        for categoryname in categories:
-            # garantir largura fixa/relativa para cada botão de categoria para que o inner possa calcular mínimo
-            category_btn = PillButton(text=f"{categoryname}", on_release_callback=lambda *_: print(f"Clicou na categoria {categoryname}"), pos_hint={'center_y': 0.5})
-            # set size_hint_x to None so inner.minimum_width calculation works reliably
+        # local functions to swap views
+        def show_categories_view(*_args):
+            # popula 'inner' com botões de categoria
             try:
-                category_btn.size_hint_x = None
-                category_btn.width = dp(140)
+                # limpa filhos do inner
+                for c in list(inner.children):
+                    try:
+                        inner.remove_widget(c)
+                    except Exception:
+                        pass
             except Exception:
                 pass
 
-            # bind do clique: chama handler se existir
-            if hasattr(self, "_on_quick_reply_selected"):
-                category_btn.bind(on_release=lambda inst, c=categoryname: self._on_quick_reply_selected(c)) # TODO implementar
-            elif hasattr(self, "handle_quick_reply"):
-                category_btn.bind(on_release=lambda inst, c=categoryname: self.handle_quick_reply(c)) # TODO implementar
-            else:
-                category_btn.bind(on_release=lambda inst, c=categoryname: print("clicou na categoria", c))
-
+            # marca view atual
             try:
-                # adiciona ao inner (rolável)
-                inner.add_widget(category_btn)
+                current_view["view"] = "categories"
             except Exception:
-                # fallback simples
+                pass
+
+             # cria botões de categoria
+            for categoryname in categories:
+                resp_list = QUICK_REPLIES.get(categoryname, [])
                 try:
-                    inner.add_widget(category_btn)
+                    btn = PillButton(text=f"{categoryname}", pos_hint={'center_y': 0.5})
+                    btn.size_hint_x = None
+                    btn.width = dp(140)
+                except Exception:
+                    btn = PillButton(text=f"{categoryname}")
+                # armazena respostas no botão (opcional)
+                try:
+                    btn.responses = list(resp_list)
                 except Exception:
                     pass
+                # ao clicar abre view de respostas da categoria
+                try:
+                    btn.bind(on_release=lambda inst, c=categoryname, r=resp_list: show_replies_view(c, r))
+                except Exception:
+                    btn.bind(on_release=lambda inst, c=categoryname, r=resp_list: print("abrir respostas para", c))
+                try:
+                    inner.add_widget(btn)
+                except Exception:
+                    try:
+                        inner.add_widget(btn)
+                    except Exception:
+                        pass
+
+        def show_replies_view(categoryname, resp_list):
+            # popula 'inner' com botões de respostas rápidas para a categoria selecionada
+            try:
+                for c in list(inner.children):
+                    try:
+                        inner.remove_widget(c)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+            # marca view atual
+            try:
+                current_view["view"] = "replies"
+            except Exception:
+                pass
+
+            # se não houver respostas, mostra uma mensagem simples (botão desabilitado)
+            if not resp_list:
+                try:
+                    empty = PillButton(text="(Sem respostas)", size_hint_x=None, width=dp(220))
+                    empty.disabled = True
+                    inner.add_widget(empty)
+                except Exception:
+                    pass
+                return
+
+            for reply in resp_list:
+                try:
+                    rbtn = PillButton(text=reply, pos_hint={'center_y': 0.5})
+                    rbtn.size_hint_x = None
+                    rbtn.width = dp(220)
+                except Exception:
+                    rbtn = PillButton(text=reply)
+                # bind: chama handler de seleção de quick reply, passando categoria e resposta
+                if hasattr(self, "_on_quick_reply_selected"):
+                    rbtn.bind(on_release=lambda inst, c=categoryname, r=reply: self._on_quick_reply_selected(c, r))
+                elif hasattr(self, "handle_quick_reply"):
+                    rbtn.bind(on_release=lambda inst, c=categoryname, r=reply: self.handle_quick_reply(c, r))
+                else:
+                    rbtn.bind(on_release=lambda inst, c=categoryname, r=reply: print("clicou na resposta", r, "da categoria", c))
+                try:
+                    inner.add_widget(rbtn)
+                except Exception:
+                    try:
+                        inner.add_widget(rbtn)
+                    except Exception:
+                        pass
+
+        # inicialmente mostra as categorias
+        try:
+            show_categories_view()
+        except Exception as e:
+            print("Erro ao mostrar categorias inicialmente:", e)
     
     # botão de toggle pausar/retomar 
     def _update_pause_state(self, instance):
