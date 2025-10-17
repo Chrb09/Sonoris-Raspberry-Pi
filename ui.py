@@ -166,7 +166,7 @@ class MainLayout(BoxLayout):
         box.add_widget(subtitle)
 
         # cria botões
-        confirm_btn = CommonButton(text="S  im")
+        confirm_btn = CommonButton(text="Sim")
         negative_btn = CommonButton(text="Não")
 
         btn_box = BoxLayout(orientation='horizontal', spacing=15, size_hint=(1, None))
@@ -288,11 +288,11 @@ class MainLayout(BoxLayout):
 
             # bind do clique: chama handler se existir
             if hasattr(self, "_on_quick_reply_selected"):
-                category_btn.bind(on_release=lambda inst, c=categoryname: self._on_quick_reply_selected(c))
+                category_btn.bind(on_release=lambda inst, c=categoryname: self._on_quick_reply_selected(c)) # TODO implementar
             elif hasattr(self, "handle_quick_reply"):
-                category_btn.bind(on_release=lambda inst, c=categoryname: self.handle_quick_reply(c))
+                category_btn.bind(on_release=lambda inst, c=categoryname: self.handle_quick_reply(c)) # TODO implementar
             else:
-                category_btn.bind(on_release=lambda inst, c=categoryname: print("else clicou na categoria", c))
+                category_btn.bind(on_release=lambda inst, c=categoryname: print("clicou na categoria", c))
 
             try:
                 self.button_group.add_widget(category_btn)
@@ -367,7 +367,7 @@ class MainLayout(BoxLayout):
             except Exception:
                 pass
 
-        # Se já estamos pausados, apenas restaurar (isso permite que um resume_btn também chame o mesmo)
+        # Se já estamos pausados, apenas restaurar
         if getattr(self, "is_paused", False):
             _restore_original()
             return
