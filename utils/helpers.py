@@ -25,8 +25,9 @@ def enable_private_and_close(context_self):
         btn = getattr(context_self, 'private_btn', None)
         if btn:
             try:
-                btn.icon_src = os.path.join(icons_dir, "private02.png")
-
+                print("Atualiza ícone")
+                #btn.text = "Privado"
+                #btn.icon_src = os.path.join(icons_dir, "private02.png")
             except Exception:
                 pass
     except Exception as e:

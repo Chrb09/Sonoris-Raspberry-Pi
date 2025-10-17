@@ -1,26 +1,20 @@
 # ui.py 
-from email.mime import text
 import os
 import sys
-import json
-from turtle import title
 
 from kivy.app import App
 from kivy.core.window import Window
-from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.uix.image import Image
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.scrollview import ScrollView
-from kivy.core.text import LabelBase
 from transcriber import Transcriber
 from kivy.uix.label import Label
 from kivy.clock import Clock
-from kivy.graphics import Color, RoundedRectangle
 
-from widgets import Divider, Toolbar, IconButton, TranscriptHistory, toolbar
+from widgets import Toolbar, IconButton, TranscriptHistory
 from widgets.transcript_history import FONT_SIZE_HISTORY, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
 from env import FONT_NAME, TEXT_COLOR, WHITE_COLOR, BLUE_COLOR, icons_dir
 from widgets.buttons.common_button import CommonButton
@@ -96,14 +90,12 @@ class MainLayout(BoxLayout):
         self.resume_icon = os.path.join(icons_dir, "resume.png")
 
         # botões na toolbar
-        # self.plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text='[b]Nova conversa[/b]')
         self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
         self.pause_btn.name = "btn_pause"
         self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
         self.private_btn = IconButton(icon_src=os.path.join(icons_dir, "private01.png"), text='[b]Privado?[/b]')
         
         # eventos dos botões
-        # self.plus_btn.bind(on_release=lambda inst: print("Clicou no plus_btn"))
         self.pause_btn.bind(on_release=self._update_pause_state)
         self.response_btn.bind(on_release=self._show_categories)
         self.private_btn.bind(on_release=self.show_private_popup)
@@ -121,7 +113,6 @@ class MainLayout(BoxLayout):
         self._original_button_group_width = button_group.width
 
         # adiciona botões ao grupo
-        # button_group.add_widget(self.plus_btn)
         button_group.add_widget(self.pause_btn)
         button_group.add_widget(self.response_btn)
         button_group.add_widget(self.private_btn)
@@ -132,14 +123,14 @@ class MainLayout(BoxLayout):
         toolbar.add_widget(anchor)
 
         self.add_widget(toolbar)
-        # toolbar.bind(height=self.on_toolbar_resize) # bind para ajustar botões ao redimensionar a toolbar
+        # toolbar.bind(height=self.on_toolbar_resize)
 
         # salva a ordem original left->right para uso por outras funções
         try:
             # children está invertido (visual left->right = reversed(children))
             self._original_button_order = list(reversed(list(self.button_group.children)))
         except Exception:
-            # fallback: compor manualmente se necessário
+            # fallback: compoe manualmente
             order = []
             for name in ("plus_btn", "pause_btn", "response_btn", "private_btn"):
                 if hasattr(self, name):
@@ -156,7 +147,7 @@ class MainLayout(BoxLayout):
         anchor = AnchorLayout(anchor_x='center', anchor_y='center')
         box = BoxLayout(orientation='vertical', padding=(24, 20), spacing=15)
         box.width = min(dp(680), Window.width * 0.95)
-        box.height = dp(300)  # altura inicial, será ajustada depois
+        box.height = dp(300)  # altura inicial
 
         icon = Image(source=os.path.join(icons_dir, "lock.png"), size_hint=(None, None), size=(dp(70), dp(70)), allow_stretch=True, keep_ratio=True)
         icon_anchor = AnchorLayout(size_hint=(1, 1))
@@ -175,7 +166,7 @@ class MainLayout(BoxLayout):
         box.add_widget(subtitle)
 
         # cria botões
-        confirm_btn = CommonButton(text="Sim")
+        confirm_btn = CommonButton(text="S  im")
         negative_btn = CommonButton(text="Não")
 
         btn_box = BoxLayout(orientation='horizontal', spacing=15, size_hint=(1, None))
