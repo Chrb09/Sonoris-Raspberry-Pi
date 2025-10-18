@@ -6,17 +6,17 @@
   "use_vad": true,
   "vad_mode": 2,
   "device": null,
-  "max_partial_chars": 240,
+  "max_partial_chars": 120,
   "partial_update_min_ms": 80,
   "history_max_lines": 200,
   "partial_reset_ms": 3000,
 
   "_comment": "Config principal do dispositivo Sonoris. Ajusta fonte, tamanhos e cores.",
-  "fonte": "Inter",
+  "font": "Inter",
   "tamanho_parcial": 28,
   "tamanho_historico": 20,
-  "color_background500": [31, 31, 31, 1],
-  "color_background300": [43, 43, 43, 1],
-  "color_white100": [255, 255, 255, 1],
-  "color_blue500": [59, 130, 246, 1]
+  "color_background": [255, 255, 255, 1],
+  "color_blue": [59, 130, 246, 1],
+  "color_gray": [43, 43, 43, 1],
+  "color_black": [0, 0, 0, 1]
 }
