@@ -229,10 +229,12 @@ class MainLayout(BoxLayout):
             self._partial_reset_ev = Clock.schedule_once(lambda dt: self._reset_partial(), PARTIAL_RESET_MS / 1000.0)
 
     # reset do texto parcial
+    # reset do texto parcial
     def _reset_partial(self):
         self._partial_reset_ev = None
         self.partial_label.text = "Aguardando..."
 
+    # limpa o histórico e reseta o parcial
     # limpa o histórico e reseta o parcial
     def _on_clear_history(self, instance):
         self.history.clear_all()
