@@ -25,7 +25,7 @@ from widgets.buttons.pill_button import PillButton
 # TODO consertar o erro do parse_color que não está retornando a cor correta
 
 Window.size = (720, 480) # tamanho inicial da janela
-# Window.fullscreen = 'auto' # fullscreen automático
+Window.fullscreen = 'auto' # fullscreen automático
 Window.clearcolor = WHITE_COLOR
 
 # ------------------------------
