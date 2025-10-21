@@ -90,7 +90,7 @@ class MainLayout(BoxLayout):
         # botões na toolbar
         self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
         self.pause_btn.name = "btn_pause"
-        self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
+        # self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
         # cria private_btn com aparência baseada em self.private_mode
         init_private_icon = os.path.join(icons_dir, "private02.png") if self.private_mode else os.path.join(icons_dir, "private01.png")
         init_private_text = "[b]Privado[/b]" if self.private_mode else "[b]Privado?[/b]"
@@ -98,7 +98,8 @@ class MainLayout(BoxLayout):
 
         # eventos dos botões
         self.pause_btn.bind(on_release=self._update_pause_state)
-        self.response_btn.bind(on_release=self._show_categories)
+        #self.response_btn.bind(on_release=self._show_categories)
+
         # somente liga o handler de popup se o modo privado não estiver ativo
         if not self.private_mode:
             self.private_btn.bind(on_release=self.show_private_popup)
@@ -113,18 +114,30 @@ class MainLayout(BoxLayout):
         self.button_group = button_group
 
         button_group.height = max(
-            getattr(self.response_btn, "height", 60),
             getattr(self.private_btn, "height", 60),
             getattr(self.pause_btn, "height", 60)
         )
-        button_group.width = 300 # largura fixa inicial
+
+        # adiciona apenas os botões que queremos centralizar (pause + private).
+        # Assim ignoramos response_btn mesmo que exista em outro ponto.
+        button_group.add_widget(self.pause_btn)
+        button_group.add_widget(self.private_btn)
+
+        # calcula largura com base apenas nesses dois botões para centralização precisa
+        try:
+            children_to_center = [self.pause_btn, self.private_btn]
+            default_btn_w = dp(120)
+            spacing = getattr(button_group, "spacing", 40) or 0
+            width_sum = 0
+            for b in children_to_center:
+                bw = getattr(b, "width", None) or default_btn_w
+                width_sum += bw
+            button_group.width = int(width_sum + spacing * (len(children_to_center) - 1))
+        except Exception:
+            # fallback seguro
+            button_group.width = 300
         # guarda largura original para poder restaurar depois (usado por _restore_original)
         self._original_button_group_width = button_group.width
-
-        # adiciona botões ao grupo
-        button_group.add_widget(self.pause_btn)
-        button_group.add_widget(self.response_btn)
-        button_group.add_widget(self.private_btn)
 
         # centraliza o grupo
         anchor = AnchorLayout(anchor_x='center', anchor_y='center')
@@ -141,7 +154,7 @@ class MainLayout(BoxLayout):
         except Exception:
             # fallback: compoe manualmente
             order = []
-            for name in ("plus_btn", "pause_btn", "response_btn", "private_btn"):
+            for name in ("plus_btn", "pause_btn", "private_btn"): #, "response_btn"
                 if hasattr(self, name):
                     order.append(getattr(self, name))
             self._original_button_order = order
@@ -356,8 +369,8 @@ class MainLayout(BoxLayout):
         popup.open()
     
     # mostra categorias de resposta rápidas
-    def _show_categories(self, instance):
-        print("Clicou no response_btn - mostrar categorias de resposta")
+    """def _show_categories(self, instance):
+        # print("Clicou no response_btn - mostrar categorias de resposta")
         # mapa de categorias -> lista de respostas rápidas (editar/expandir conforme necessário)
         QUICK_REPLIES = {
             "Positiva": [
@@ -642,7 +655,7 @@ class MainLayout(BoxLayout):
         try:
             show_categories_view()
         except Exception as e:
-            print("Erro ao mostrar categorias inicialmente:", e)
+            print("Erro ao mostrar categorias inicialmente:", e)"""
     
     # botão de toggle pausar/retomar 
     def _update_pause_state(self, instance):
