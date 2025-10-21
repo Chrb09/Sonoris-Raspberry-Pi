@@ -23,9 +23,10 @@ from widgets.buttons.pill_button import PillButton
 # TODO otimizar o codigo
 # TODO adicionar os widgets
 # TODO consertar o erro do parse_color que não está retornando a cor correta
+# TODO ao clicar no private, não salvar a conversa
 
 Window.size = (720, 480) # tamanho inicial da janela
-Window.fullscreen = 'auto' # fullscreen automático
+#Window.fullscreen = 'auto' # fullscreen automático
 Window.clearcolor = WHITE_COLOR
 
 # ------------------------------
@@ -72,6 +73,11 @@ class MainLayout(BoxLayout):
         history_height = int(FONT_SIZE_HISTORY * 6)
         self.scroll = ScrollView(size_hint=(1, None), height=history_height, do_scroll_x=False, do_scroll_y=True)
         self.history = TranscriptHistory()
+        # garantir que o widget de histórico conheça o modo privado atual
+        try:
+            self.history.set_private(self.private_mode)
+        except Exception:
+            pass
         self.scroll.add_widget(self.history)
         self.add_widget(self.scroll)
 
@@ -90,7 +96,6 @@ class MainLayout(BoxLayout):
         # botões na toolbar
         self.pause_btn = IconButton(icon_src=self.pause_icon, text="[b]Pausar[/b]")
         self.pause_btn.name = "btn_pause"
-        # self.response_btn = IconButton(icon_src=os.path.join(icons_dir, "response.png"), text='[b]Respostas[/b]')
         # cria private_btn com aparência baseada em self.private_mode
         init_private_icon = os.path.join(icons_dir, "private02.png") if self.private_mode else os.path.join(icons_dir, "private01.png")
         init_private_text = "[b]Privado[/b]" if self.private_mode else "[b]Privado?[/b]"
@@ -98,7 +103,6 @@ class MainLayout(BoxLayout):
 
         # eventos dos botões
         self.pause_btn.bind(on_release=self._update_pause_state)
-        #self.response_btn.bind(on_release=self._show_categories)
 
         # somente liga o handler de popup se o modo privado não estiver ativo
         if not self.private_mode:
@@ -119,7 +123,6 @@ class MainLayout(BoxLayout):
         )
 
         # adiciona apenas os botões que queremos centralizar (pause + private).
-        # Assim ignoramos response_btn mesmo que exista em outro ponto.
         button_group.add_widget(self.pause_btn)
         button_group.add_widget(self.private_btn)
 
@@ -154,7 +157,7 @@ class MainLayout(BoxLayout):
         except Exception:
             # fallback: compoe manualmente
             order = []
-            for name in ("plus_btn", "pause_btn", "private_btn"): #, "response_btn"
+            for name in ("plus_btn", "pause_btn", "private_btn"):
                 if hasattr(self, name):
                     order.append(getattr(self, name))
             self._original_button_order = order
@@ -182,7 +185,6 @@ class MainLayout(BoxLayout):
             else:
                  icon = os.path.join(icons_dir, "private01.png")
                  txt = "[b]Privado?[/b]"
-
 
             # aplica no widget principal (IconButton)
             try:
@@ -242,12 +244,10 @@ class MainLayout(BoxLayout):
             self._partial_reset_ev = Clock.schedule_once(lambda dt: self._reset_partial(), PARTIAL_RESET_MS / 1000.0)
 
     # reset do texto parcial
-    # reset do texto parcial
     def _reset_partial(self):
         self._partial_reset_ev = None
         self.partial_label.text = "Aguardando..."
 
-    # limpa o histórico e reseta o parcial
     # limpa o histórico e reseta o parcial
     def _on_clear_history(self, instance):
         self.history.clear_all()
@@ -367,295 +367,6 @@ class MainLayout(BoxLayout):
         negative_btn.bind(on_release=lambda *_: self.popup.dismiss())
 
         popup.open()
-    
-    # mostra categorias de resposta rápidas
-    """def _show_categories(self, instance):
-        # print("Clicou no response_btn - mostrar categorias de resposta")
-        # mapa de categorias -> lista de respostas rápidas (editar/expandir conforme necessário)
-        QUICK_REPLIES = {
-            "Positiva": [
-                "Excelente!", "Muito bom!", "Aprovado.", "Perfeito, obrigado."
-            ],
-            "Negativa": [
-                "Não atende.", "Rejeitado.", "Problema grave.", "Rever por favor."
-            ],
-            "Neutras": [
-                "Notado.", "Ok.", "Recebido.", "Sem alterações."
-            ],
-            "Perguntas": [
-                "Pode explicar mais?", "Qual o prazo?", "Quem será responsável?", "Onde encontro isso?"
-            ]
-        }
-        categories = list(QUICK_REPLIES.keys())
- 
-        local_original = getattr(self, "_original_button_order", None)
-        if not local_original:
-            # fallback: calcula localmente sem atribuir a self._original_button_order
-            local_original = list(reversed(list(self.button_group.children)))
- 
-        # salva state atual para restaurar depois
-        try:
-            self._saved_button_group_size_hint = tuple(self.button_group.size_hint)
-        except Exception:
-            self._saved_button_group_size_hint = getattr(self, "_original_button_group_size_hint", None)
-        try:
-            self._saved_button_group_width = getattr(self.button_group, "width", None)
-        except Exception:
-            self._saved_button_group_width = None
-
-        # limpa a toolbar primeiro
-        try:
-            current_children = list(self.button_group.children)
-        except Exception:
-            current_children = []
-        # salvamos as instâncias removidas para referência (inverte para left->right se necessário)
-        self._hidden_buttons = list(reversed(current_children))
-        # limpa
-        try:
-            self.button_group.clear_widgets()
-        except Exception:
-            for ch in current_children:
-                try:
-                    self.button_group.remove_widget(ch)
-                except Exception:
-                    pass
-
-        try:
-            self.button_group.spacing = 15
-        except Exception:
-            pass
-
-        # força alinhamento à esquerda: altera o AnchorLayout pai do button_group
-        parent_anchor = getattr(self.button_group, "parent", None)
-        try:
-            if parent_anchor and hasattr(parent_anchor, "anchor_x"):
-                parent_anchor.anchor_x = "left"
-        except Exception:
-            pass
-
-        back_btn = IconButton(icon_src=os.path.join(icons_dir, "back.png"), text='[b]Voltar[/b]')
-        try:
-            back_btn.size_hint_x = None
-            back_btn.width = dp(100)
-        except Exception:
-            pass
-        # controla view atual (categories | replies). Usamos dict para closure mutável.
-        current_view = {"view": None}
-
-        # ação única do botão "Voltar": decide para onde ir dependendo da view atual
-        def back_action(*_args):
-            try:
-                if current_view.get("view") == "replies":
-                    show_categories_view()
-                else:
-                    _restore_original()
-            except Exception:
-                try:
-                    _restore_original()
-                except Exception:
-                    pass
-
-        # bind único do botão voltar
-        try:
-            back_btn.bind(on_release=back_action)
-        except Exception:
-            pass
-        
-        # restaura a barra original
-        def _restore_original(*_args):
-            # limpa tudo primeiro
-            try:
-                self.button_group.clear_widgets()
-            except Exception:
-                for c in list(self.button_group.children):
-                    try:
-                        self.button_group.remove_widget(c)
-                    except Exception:
-                        pass
-
-            # re-adiciona os widgets na ordem original
-            for w in getattr(self, "_original_button_order", local_original):
-                try:
-                    if w not in self.button_group.children:
-                        self.button_group.add_widget(w)
-                except Exception:
-                    try:
-                        from kivy.uix.button import Button
-                        self.button_group.add_widget(Button(text="??"))
-                    except Exception:
-                        pass
-
-            # restaura alinhamento do AnchorLayout pai para centralizado
-            try:
-                if parent_anchor and hasattr(parent_anchor, "anchor_x"):
-                    parent_anchor.anchor_x = "center"
-            except Exception:
-                pass
-
-            # restaura largura/altura do grupo de botões para centralização original
-            try:
-                # restaura size_hint e width salvos
-                if hasattr(self, "_saved_button_group_size_hint") and self._saved_button_group_size_hint is not None:
-                    self.button_group.size_hint = self._saved_button_group_size_hint
-                else:
-                    self.button_group.size_hint = (None, None)
-                if getattr(self, "_saved_button_group_width", None) is not None:
-                    self.button_group.width = self._saved_button_group_width
-                else:
-                    self.button_group.width = getattr(self, "_original_button_group_width", self.button_group.width)
-                self.button_group.spacing = 40
-            except Exception:
-                pass
-
-            # aplica aparência do private_btn após restaurar widgets (mantém persistência)
-            try:
-                self._apply_private_mode_to_btn()
-            except Exception:
-                pass
-
-        try:
-            self.button_group.add_widget(back_btn)
-        except Exception:
-            try:
-                # se falhar, tenta adicionar sem index
-                self.button_group.add_widget(back_btn)
-            except Exception:
-                pass
-        # --- nova lógica: colocar as categorias dentro de um ScrollView horizontal ---
-        try:
-            # expandir button_group para ocupar espaço restante (preencher até a outra borda)
-            try:
-                self.button_group.size_hint = (1, None)
-                # usa largura do pai como referência, fallback para Window.width
-                target_width = getattr(parent_anchor, "width", None) or Window.width
-                self.button_group.width = target_width
-            except Exception:
-                pass
-
-            # ScrollView que ocupará o espaço restante da button_group
-            cat_scroll = ScrollView(do_scroll_x=True, do_scroll_y=False, size_hint=(1, None), height=self.button_group.height)
-            # BoxLayout interno com largura dinâmica (size_hint_x=None) para permitir rolagem
-            inner = BoxLayout(orientation='horizontal', size_hint_x=None, height=self.button_group.height, spacing=10)
-            # manter a largura do inner igual ao mínimo necessário (soma das larguras dos filhos)
-            try:
-                inner.bind(minimum_width=inner.setter('width'))
-            except Exception:
-                # fallback simples: não faz bind se propriedade não existir
-                pass
-
-            cat_scroll.add_widget(inner)
-
-            # adiciona o ScrollView ao grupo (depois do back_btn)
-            try:
-                self.button_group.add_widget(cat_scroll)
-            except Exception:
-                try:
-                    self.button_group.add_widget(cat_scroll)
-                except Exception:
-                    pass
-        except Exception as e:
-            print("Erro ao criar scroll para categorias:", e)
-
-        # local functions to swap views
-        def show_categories_view(*_args):
-            # popula 'inner' com botões de categoria
-            try:
-                # limpa filhos do inner
-                for c in list(inner.children):
-                    try:
-                        inner.remove_widget(c)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-
-            # marca view atual
-            try:
-                current_view["view"] = "categories"
-            except Exception:
-                pass
-
-             # cria botões de categoria
-            for categoryname in categories:
-                resp_list = QUICK_REPLIES.get(categoryname, [])
-                try:
-                    btn = PillButton(text=f"{categoryname}", pos_hint={'center_y': 0.5})
-                    btn.size_hint_x = None
-                    btn.width = dp(140)
-                except Exception:
-                    btn = PillButton(text=f"{categoryname}")
-                # armazena respostas no botão (opcional)
-                try:
-                    btn.responses = list(resp_list)
-                except Exception:
-                    pass
-                # ao clicar abre view de respostas da categoria
-                try:
-                    btn.bind(on_release=lambda inst, c=categoryname, r=resp_list: show_replies_view(c, r))
-                except Exception:
-                    btn.bind(on_release=lambda inst, c=categoryname, r=resp_list: print("abrir respostas para", c))
-                try:
-                    inner.add_widget(btn)
-                except Exception:
-                    try:
-                        inner.add_widget(btn)
-                    except Exception:
-                        pass
-
-        def show_replies_view(categoryname, resp_list):
-            # popula 'inner' com botões de respostas rápidas para a categoria selecionada
-            try:
-                for c in list(inner.children):
-                    try:
-                        inner.remove_widget(c)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-
-            # marca view atual
-            try:
-                current_view["view"] = "replies"
-            except Exception:
-                pass
-
-            # se não houver respostas, mostra uma mensagem simples (botão desabilitado)
-            if not resp_list:
-                try:
-                    empty = PillButton(text="(Sem respostas)", size_hint_x=None, width=dp(220))
-                    empty.disabled = True
-                    inner.add_widget(empty)
-                except Exception:
-                    pass
-                return
-
-            for reply in resp_list:
-                try:
-                    rbtn = PillButton(text=reply, pos_hint={'center_y': 0.5})
-                    rbtn.size_hint_x = None
-                    rbtn.width = dp(220)
-                except Exception:
-                    rbtn = PillButton(text=reply)
-                # bind: chama handler de seleção de quick reply, passando categoria e resposta
-                if hasattr(self, "_on_quick_reply_selected"):
-                    rbtn.bind(on_release=lambda inst, c=categoryname, r=reply: self._on_quick_reply_selected(c, r))
-                elif hasattr(self, "handle_quick_reply"):
-                    rbtn.bind(on_release=lambda inst, c=categoryname, r=reply: self.handle_quick_reply(c, r))
-                else:
-                    rbtn.bind(on_release=lambda inst, c=categoryname, r=reply: print("clicou na resposta", r, "da categoria", c))
-                try:
-                    inner.add_widget(rbtn)
-                except Exception:
-                    try:
-                        inner.add_widget(rbtn)
-                    except Exception:
-                        pass
-
-        # inicialmente mostra as categorias
-        try:
-            show_categories_view()
-        except Exception as e:
-            print("Erro ao mostrar categorias inicialmente:", e)"""
     
     # botão de toggle pausar/retomar 
     def _update_pause_state(self, instance):
@@ -854,8 +565,28 @@ class MainLayout(BoxLayout):
         try:
             plus_btn = IconButton(icon_src=os.path.join(icons_dir, "plus.png"), text="[b]Nova conversa[/b]")
             plus_btn.name = "plus_btn"
-            # ao clicar, chama _on_clear_history, desativa modo privado e depois restaura a toolbar original
-            plus_btn.bind(on_release=lambda inst: (self._on_clear_history(inst), self._disable_private_mode(), _restore_original()))
+            # ao clicar: finalizar conversa atual (salva se pública) e iniciar nova conversa,
+            # então desativa modo privado na UI e restaura a toolbar original
+            def _on_new_conv(inst):
+                try:
+                    # finalize current conversation and start a new one (next conversation not private)
+                    try:
+                        self.history.finalize_and_start_new(private_next=False)
+                    except Exception:
+                        # fallback: clear UI history
+                        try:
+                            self._on_clear_history(inst)
+                        except Exception:
+                            pass
+                    # desativa o modo privado na UI
+                    try:
+                        self._disable_private_mode()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+
+            plus_btn.bind(on_release=_on_new_conv)
             # guarda referência para possível uso futuro
             self.plus_btn = plus_btn
         except Exception:
@@ -924,6 +655,13 @@ class MainLayout(BoxLayout):
         # aplica aparência padrão (icon/text/disabled/opacidade)
         try:
             self._apply_private_mode_to_btn()
+        except Exception:
+            pass
+
+        # propaga para history
+        try:
+            if hasattr(self, 'history'):
+                self.history.set_private(False)
         except Exception:
             pass
 

@@ -1,6 +1,8 @@
-# widgets/icon_button.py
+# widgets/transcript_history.py
 import os
 import json
+import time
+from datetime import datetime
 
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
@@ -38,6 +40,17 @@ class TranscriptHistory(GridLayout):
         self.spacing = 10
         self.bind(minimum_height=self.setter('height')) # auto ajusta height ao conteúdo
         self.lines = []
+        # controle de conversas (persistência)
+        self._private = False
+        self.current_conversation = None
+        # pasta onde salvar conversas (criada no diretório de trabalho atual)
+        self._convos_dir = os.path.join(os.getcwd(), "conversations")
+        try:
+            os.makedirs(self._convos_dir, exist_ok=True)
+        except Exception:
+            pass
+        # inicia primeira conversa
+        self.start_new_conversation()
 
     # adiciona linha ao histórico, removendo a mais antiga se necessário
     def add_line(self, text):
@@ -70,6 +83,22 @@ class TranscriptHistory(GridLayout):
         from kivy.clock import Clock
         Clock.schedule_once(lambda dt: _on_texture_size(lbl, lbl.texture_size), 0)
         self.lines.append(lbl)
+        # registra também no objeto de conversa atual
+        try:
+            if self.current_conversation is not None:
+                entry = {
+                    "text": text,
+                    "timestamp": int(time.time())
+                }
+                self.current_conversation.setdefault("lines", []).append(entry)
+                # salva imediatamente se não for privado
+                try:
+                    if not self._private:
+                        self._save_current_conversation()
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
     # limpa todo o histórico
     def clear_all(self):
@@ -79,3 +108,86 @@ class TranscriptHistory(GridLayout):
             except Exception:
                 pass
         self.lines = []
+
+    # marca o modo privado (quando True não grava conversas em disco)
+    def set_private(self, flag: bool):
+        try:
+            self._private = bool(flag)
+        except Exception:
+            self._private = False
+
+    # inicia uma nova conversa — finaliza a anterior gravando (se pública)
+    def start_new_conversation(self, private: bool = False):
+        # finaliza a conversa atual (garante que esteja salva se pública)
+        try:
+            # se existir e pública, salvamos (já tem been saved on add_line but ensure)
+            if self.current_conversation is not None and not getattr(self, "_private", False):
+                try:
+                    self._save_current_conversation()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # cria nova conversa em memória
+        try:
+            now = datetime.utcnow()
+            conv_id = now.strftime("%Y%m%d_%H%M%S")
+            self.current_conversation = {
+                "id": conv_id,
+                "created_at": now.isoformat() + "Z",
+                "lines": [],
+                "private": bool(private)
+            }
+            # atualiza flag privada
+            self._private = bool(private)
+            # define caminho de arquivo para esta conversa (sempre sobrescrevemos)
+            self.current_conversation["_file"] = os.path.join(self._convos_dir, f"conversation_{conv_id}.json")
+        except Exception:
+            self.current_conversation = {"id": "unknown", "created_at": "", "lines": [], "private": bool(private)}
+
+    # salva o estado corrente da conversa em disco (sobrescreve)
+    def _save_current_conversation(self):
+        try:
+            if not self.current_conversation:
+                return
+            # se marcado privado, não salvar
+            if getattr(self, "_private", False):
+                return
+            # prepare payload sem campos internos
+            payload = {
+                "id": self.current_conversation.get("id"),
+                "created_at": self.current_conversation.get("created_at"),
+                "private": False,
+                "lines": self.current_conversation.get("lines", [])
+            }
+            path = self.current_conversation.get("_file") or os.path.join(self._convos_dir, f"conversation_{payload['id']}.json")
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(payload, f, ensure_ascii=False, indent=2)
+            except Exception:
+                # fallback: tenta salvar em cwd
+                try:
+                    alt = os.path.join(os.getcwd(), f"conversation_{payload['id']}.json")
+                    with open(alt, "w", encoding="utf-8") as f:
+                        json.dump(payload, f, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    # finaliza a conversa atual (salva se pública) e começa outra
+    def finalize_and_start_new(self, private_next: bool = False):
+        try:
+            # garantir que atual seja salva (se pública)
+            try:
+                if self.current_conversation and not getattr(self, "_private", False):
+                    self._save_current_conversation()
+            except Exception:
+                pass
+            # limpa UI
+            self.clear_all()
+            # inicia nova conversa com a flag private_next
+            self.start_new_conversation(private=private_next)
+        except Exception:
+            pass
