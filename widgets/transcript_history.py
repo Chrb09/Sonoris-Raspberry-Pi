@@ -10,6 +10,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 
 from utils.colors import parse_color
+from utils.device_info import DeviceInfo
 
 # ------------------------------
 # TranscriptHistory
@@ -51,10 +52,16 @@ class TranscriptHistory(GridLayout):
         self.bind(minimum_height=self.setter('height')) # auto ajusta height ao conteúdo
         self.lines = []
         
+        # Inicializa o gerenciador de informações do dispositivo
+        self.device_info = DeviceInfo()
+        
         # Propriedades para salvar transcrições
         self.is_private_mode = False
         self.saved_lines = []
         self.conversation_id = self._generate_conversation_id()
+        
+        # Incrementa o contador de conversas ao iniciar
+        self.device_info.increment_conversation_counter()
     
     def _generate_conversation_id(self):
         """Gera um ID único para uma nova conversa"""
@@ -70,6 +77,8 @@ class TranscriptHistory(GridLayout):
         self.conversation_id = self._generate_conversation_id()
         # Limpa as linhas salvas para a nova conversa
         self.saved_lines = []
+        # Incrementa o contador de conversas
+        self.device_info.increment_conversation_counter()
     
     def set_private_mode(self, is_private):
         """Define se está em modo privado (não salva transcrições)"""
@@ -198,3 +207,16 @@ class TranscriptHistory(GridLayout):
         except Exception as e:
             print(f"Erro ao listar conversas salvas: {e}")
         return conversations
+    
+    def get_device_info_for_bluetooth(self):
+        """Retorna informações do dispositivo para envio via Bluetooth"""
+        # Atualiza o tempo ativo antes de retornar
+        self.device_info.update_active_time()
+        return self.device_info.get_device_data_for_bluetooth()
+        
+    def update_device_name(self, name):
+        """Atualiza o nome do dispositivo (apenas via Bluetooth)"""
+        if name and isinstance(name, str):
+            self.device_info.device_name = name
+            return True
+        return False

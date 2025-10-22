@@ -60,7 +60,33 @@ def run():
     else:
         # inicia o BLE server numa thread (vai chamar on_ble_start/stop) se disponível
         if BLE_AVAILABLE:
-            ble_stop_event, _ = start_ble_server_in_thread(on_start_cb=on_ble_start, on_stop_cb=on_ble_stop)
+            # Variáveis para referência do callback
+            transcript_history_ref = {'instance': None}
+            
+            # Callbacks para o BLE
+            def get_device_info():
+                if transcript_history_ref['instance'] is not None:
+                    return transcript_history_ref['instance'].get_device_info_for_bluetooth()
+                return None
+                
+            def set_device_name(name):
+                if transcript_history_ref['instance'] is not None:
+                    return transcript_history_ref['instance'].update_device_name(name)
+                return False
+                
+            def get_conversations():
+                if transcript_history_ref['instance'] is not None:
+                    return transcript_history_ref['instance'].get_saved_conversations()
+                return []
+            
+            # Inicia o servidor BLE com os callbacks
+            ble_stop_event, _ = start_ble_server_in_thread(
+                on_start_cb=on_ble_start, 
+                on_stop_cb=on_ble_stop,
+                device_info_cb=get_device_info,
+                set_device_name_cb=set_device_name,
+                get_conversations_cb=get_conversations
+            )
             print("Aguardando conexão Bluetooth, conecte pelo app Sonoris no celular...")
         else:
             print("[MAIN] BLE não disponível/encontrado. Ative SKIP_BLE=True para pular o BLE em ambiente de teste.")
@@ -82,6 +108,15 @@ def run():
 
             # cria app Kivy (auto_start True faz com que o transcriber seja iniciado no on_start do Kivy)
             app = TranscriberApp(transcriber=transcriber, auto_start=True)
+            
+            # Aguarda o app iniciar e então salva referência ao TranscriptHistory para uso no BLE
+            from kivy.clock import Clock
+            def set_transcript_history_ref(dt):
+                if hasattr(app, 'layout') and hasattr(app.layout, 'history'):
+                    if 'transcript_history_ref' in globals():
+                        transcript_history_ref['instance'] = app.layout.history
+                        print("[MAIN] TranscriptHistory referenciado para uso com BLE")
+            Clock.schedule_once(set_transcript_history_ref, 1)
 
             # starta uma thread que vigia a desconexão e força o app a parar se necessário
             def watcher():

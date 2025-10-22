@@ -73,3 +73,10 @@ class TranscriberApp(App):
             self.transcriber.stop()
         except Exception:
             pass
+            
+        # Atualiza o tempo ativo no DeviceInfo
+        try:
+            if hasattr(self.layout, 'history') and hasattr(self.layout.history, 'device_info'):
+                self.layout.history.device_info.update_active_time()
+        except Exception as e:
+            print(f"Erro ao atualizar tempo ativo: {e}")
