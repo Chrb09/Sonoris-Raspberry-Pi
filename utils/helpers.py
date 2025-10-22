@@ -1,6 +1,5 @@
 # helpers.py
 # funções auxiliares diversas
-import os
 
 # limita valor entre 0.0 e 1.0
 def _clamp(v, lo=0.0, hi=1.0):
