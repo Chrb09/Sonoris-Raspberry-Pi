@@ -6,6 +6,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, ListProperty, NumericProperty
 from kivy.graphics import Color, RoundedRectangle
 from widgets.image_canvas import ImageCanvas
+from env import FONT_NAME_SEMIBOLD
 
 # ------------------------------
 # IconButton
@@ -47,7 +48,7 @@ class IconButton(ButtonBehavior, BoxLayout):
         self._image_canvas = ImageCanvas(source=self.icon_src, overlay_color=self.img_tint, radius=radius, size_hint=(None, None), size=(img_w, img_h))
 
         # label (rótulo)
-        self._label = Label(text=label_text, size_hint=(None, None), size=(img_w, label_height), font_size=self.font_size, markup=True, halign='center', valign='middle')
+        self._label = Label(text=label_text, size_hint=(None, None), size=(img_w, label_height), font_size=self.font_size, markup=True, halign='center', valign='middle', font_name=FONT_NAME_SEMIBOLD)
         self._label.bind(size=lambda inst, val: inst.setter('text_size')(inst, val))
 
         self.add_widget(self._image_canvas)

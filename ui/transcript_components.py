@@ -6,10 +6,14 @@ Este módulo contém classes e funções para gerenciar a exibição de transcri
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.clock import Clock
+from kivy.core.window import Window
 
-from widgets.transcript_history import TranscriptHistory
-from widgets.transcript_history import TranscriptHistory, FONT_SIZE_HISTORY, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS, FONT_SIZE_PARTIAL
-from ui.ui_config import truncate_partial, UI_TEXTS, TEXT_COLOR
+from widgets.transcript_history import TranscriptHistory, MAX_PARTIAL_CHARS, PARTIAL_RESET_MS
+from ui.ui_config import truncate_partial, UI_TEXTS
+from env import TEXT_COLOR, FONT_SIZE_PARTIAL, FONT_SIZE_HISTORY, LINE_HEIGHT, FONT_NAME
+
+# Configuração da altura do histórico como porcentagem da tela
+HISTORY_HEIGHT_PERCENT = 0.25  # 25% da altura da tela (máximo de metade seria 0.5)
 
 class TranscriptionManager:
     """
@@ -31,7 +35,10 @@ class TranscriptionManager:
     def _setup_ui_components(self):
         """Configura os componentes de UI para transcrição."""
         # Histórico de transcrição (scrollable)
-        history_height = int(FONT_SIZE_HISTORY * 6)
+        # Usa porcentagem da altura da janela ao invés de múltiplo do tamanho da fonte
+        # Isso garante que o histórico não fique maior que o partial em tamanhos de fonte grandes
+        history_height = int(Window.height * HISTORY_HEIGHT_PERCENT)
+        
         self.scroll = ScrollView(
             size_hint=(1, None),
             height=history_height,
@@ -41,26 +48,47 @@ class TranscriptionManager:
         self.history = TranscriptHistory()
         self.scroll.add_widget(self.history)
         
-        # Texto parcial
+        # Atualiza a altura do histórico quando a janela for redimensionada
+        def update_history_height(instance, value):
+            new_height = int(value * HISTORY_HEIGHT_PERCENT)
+            self.scroll.height = new_height
+        
+        Window.bind(height=update_history_height)
+        
+        # ScrollView para o texto parcial (permite scroll quando há overflow)
+        self.partial_scroll = ScrollView(
+            size_hint=(1, 1),
+            do_scroll_x=False,
+            do_scroll_y=True
+        )
+        
+        # Texto parcial dentro do ScrollView
         self.partial_label = Label(
             text=UI_TEXTS['waiting_text'],
-            size_hint=(1, 1),
+            size_hint_y=None,
             halign='center',
-            valign='middle',
+            valign='top',
             text_size=(None, None),
             font_size=FONT_SIZE_PARTIAL,
-            color=TEXT_COLOR
+            color=TEXT_COLOR,
+            font_name=FONT_NAME,
+            line_height=LINE_HEIGHT
         )
-        self.partial_label.bind(size=self._update_partial_text_size)
+        self.partial_label.bind(
+            width=self._update_partial_text_size,
+            texture_size=self._update_partial_height
+        )
+        
+        self.partial_scroll.add_widget(self.partial_label)
     
     def get_components(self):
         """
         Retorna os componentes de UI para uso no layout principal.
         
         Returns:
-            Tupla com (scroll_view, partial_label)
+            Tupla com (scroll_view, partial_scroll)
         """
-        return self.scroll, self.partial_label
+        return self.scroll, self.partial_scroll
     
     def set_partial(self, text):
         """
@@ -70,6 +98,18 @@ class TranscriptionManager:
             text: Texto a ser exibido como transcrição parcial
         """
         self.partial_label.text = text
+        
+        # Scrola para o final do texto APENAS se houver overflow (texto maior que a tela)
+        def scroll_if_needed(dt):
+            try:
+                # Verifica se o conteúdo é maior que o viewport
+                if self.partial_label.height > self.partial_scroll.height:
+                    # Só scrola se realmente houver overflow
+                    self.partial_scroll.scroll_y = 0
+            except Exception:
+                pass
+        
+        Clock.schedule_once(scroll_if_needed, 0.05)
         
         # Reseta o timer se já houver um agendado
         if self._partial_reset_ev:
@@ -127,7 +167,17 @@ class TranscriptionManager:
             inst: Instância do widget
             val: Novo valor
         """
-        inst.text_size = (inst.width - 40, inst.height)
+        inst.text_size = (inst.width - 40, None)
+    
+    def _update_partial_height(self, inst, val):
+        """
+        Atualiza a altura do label parcial baseado no tamanho da textura.
+        
+        Args:
+            inst: Instância do widget
+            val: Novo valor (texture_size)
+        """
+        inst.height = val[1]
     
     def save_ui_state(self):
         """
@@ -136,19 +186,19 @@ class TranscriptionManager:
         Returns:
             Dicionário com estados salvos dos componentes
         """
-        # Salva (size_hint, height, opacity) para o label parcial
+        # Salva (size_hint, height, opacity) para o partial_scroll
         try:
-            partial_size_hint = tuple(self.partial_label.size_hint)
+            partial_size_hint = tuple(self.partial_scroll.size_hint)
         except Exception:
-            partial_size_hint = getattr(self.partial_label, "size_hint", (1, 1))
+            partial_size_hint = getattr(self.partial_scroll, "size_hint", (1, 1))
         
         try:
-            partial_height = getattr(self.partial_label, "height", None)
+            partial_height = getattr(self.partial_scroll, "height", None)
         except Exception:
             partial_height = None
         
         try:
-            partial_opacity = getattr(self.partial_label, "opacity", 1)
+            partial_opacity = getattr(self.partial_scroll, "opacity", 1)
         except Exception:
             partial_opacity = 1
         
@@ -178,19 +228,19 @@ class TranscriptionManager:
     def apply_paused_state(self):
         """
         Aplica o estado visual de pausa nos componentes de UI.
-        Oculta o label parcial e expande o histórico.
+        Oculta o partial_scroll e expande o histórico.
         """
-        # Oculta partial_label sem deixar espaço
+        # Oculta partial_scroll sem deixar espaço
         try:
-            self.partial_label.size_hint = (1, None)
+            self.partial_scroll.size_hint = (1, None)
         except Exception:
             pass
         try:
-            self.partial_label.height = 0
+            self.partial_scroll.height = 0
         except Exception:
             pass
         try:
-            self.partial_label.opacity = 0
+            self.partial_scroll.opacity = 0
         except Exception:
             pass
 
@@ -215,23 +265,23 @@ class TranscriptionManager:
         if not saved_state:
             return
         
-        # Restaura partial_label
+        # Restaura partial_scroll
         if 'partial' in saved_state:
             partial_state = saved_state['partial']
             try:
-                self.partial_label.size_hint = partial_state.get('size_hint', (1, 1))
+                self.partial_scroll.size_hint = partial_state.get('size_hint', (1, 1))
             except Exception:
                 pass
             
             try:
                 height = partial_state.get('height')
                 if height is not None:
-                    self.partial_label.height = height
+                    self.partial_scroll.height = height
             except Exception:
                 pass
             
             try:
-                self.partial_label.opacity = partial_state.get('opacity', 1)
+                self.partial_scroll.opacity = partial_state.get('opacity', 1)
             except Exception:
                 pass
         

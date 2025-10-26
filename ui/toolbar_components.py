@@ -13,7 +13,7 @@ from kivy.clock import Clock
 
 from widgets import IconButton, Toolbar
 from widgets.buttons.pill_button import PillButton
-from ui.ui_config import ICON_PATHS, UI_TEXTS, BLUE_COLOR
+from ui.ui_config import ICON_PATHS, UI_TEXTS
 
 class ToolbarManager:
     """
@@ -86,7 +86,7 @@ class ToolbarManager:
         """Cria e retorna o widget Toolbar completo."""
         toolbar = Toolbar(
             orientation='vertical',
-            bg_color=BLUE_COLOR,
+            bg_color=(0.231, 0.510, 0.965, 1),  # azul
             height=140,
             min_height=140,
             max_height=140

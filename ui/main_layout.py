@@ -36,14 +36,14 @@ class MainLayout(BoxLayout):
         
         # Gerenciador de transcrições
         self.transcription_manager = TranscriptionManager(ui_state=self.ui_state)
-        scroll, partial_label = self.transcription_manager.get_components()
+        scroll, partial_scroll = self.transcription_manager.get_components()
         self.scroll = scroll
-        self.partial_label = partial_label
+        self.partial_scroll = partial_scroll
         self.history = self.transcription_manager.history
         
         # Adiciona componentes de transcrição ao layout
         self.add_widget(self.scroll)
-        self.add_widget(self.partial_label)
+        self.add_widget(self.partial_scroll)
         
         # Gerenciador da barra de ferramentas
         self.toolbar_manager = ToolbarManager(self, self.ui_state)

@@ -3,12 +3,11 @@ from kivy.uix.button import Button
 from kivy.metrics import dp
 from kivy.properties import ListProperty, NumericProperty, StringProperty, ObjectProperty
 from kivy.graphics import Color, RoundedRectangle
-
-from env import BLUE_COLOR, WHITE_COLOR
+from env import FONT_NAME_BOLD
 
 class CommonButton(Button):
-    bg_color = ListProperty(list(BLUE_COLOR))
-    txt_color = ListProperty(list(WHITE_COLOR))
+    bg_color = ListProperty([0.231, 0.510, 0.965, 1])  # azul padrão
+    txt_color = ListProperty([1, 1, 1, 1])  # branco padrão
     height = NumericProperty(dp(65))
     radius = NumericProperty(dp(14))
 
@@ -23,6 +22,7 @@ class CommonButton(Button):
         self.background_color = (0, 0, 0, 0)  # transparente
         self.color = self.txt_color # cor do texto
         self.font_size = dp(30)
+        self.font_name = FONT_NAME_BOLD  # Usa fonte Bold para botões
 
         # desenha fundo arredondado
         with self.canvas.before:

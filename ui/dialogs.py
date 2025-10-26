@@ -12,7 +12,8 @@ from kivy.metrics import dp
 from kivy.clock import Clock
 
 from widgets.buttons.common_button import CommonButton
-from ui.ui_config import ICON_PATHS, UI_TEXTS, TEXT_COLOR, WHITE_COLOR
+from ui.ui_config import ICON_PATHS, UI_TEXTS
+from env import TEXT_COLOR, FONT_NAME_SEMIBOLD, FONT_NAME_REGULAR, LINE_HEIGHT
 
 class PrivateDialog:
     """Diálogo para ativação do modo privado."""
@@ -55,7 +56,9 @@ class PrivateDialog:
             size_hint=(1, None), 
             halign='center', 
             valign='middle', 
-            markup=True
+            markup=True,
+            font_name=FONT_NAME_SEMIBOLD,  # Título usa SemiBold
+            line_height=LINE_HEIGHT
         )
         title.bind(width=lambda inst, w: setattr(inst, "text_size", (w, None)))
         title.bind(texture_size=lambda inst, ts: setattr(inst, "height", ts[1] if ts[1] > 0 else dp(36)))
@@ -69,7 +72,9 @@ class PrivateDialog:
             size_hint=(1, None), 
             halign='center', 
             valign='middle', 
-            markup=True
+            markup=True,
+            font_name=FONT_NAME_REGULAR,  # Subtítulo usa Regular
+            line_height=LINE_HEIGHT
         )
         subtitle.bind(width=lambda inst, w: setattr(inst, "text_size", (w, None)))
         subtitle.bind(texture_size=lambda inst, ts: setattr(inst, "height", ts[1] if ts[1] > 0 else dp(28)))
@@ -92,7 +97,7 @@ class PrivateDialog:
             auto_dismiss=False,
             separator_height=0,
             background='',
-            background_color=WHITE_COLOR,
+            background_color=(1, 1, 1, 1),  # branco
         )
         
         # Ajusta altura do box após renderização

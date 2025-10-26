@@ -5,7 +5,7 @@ Este módulo contém constantes e configurações usadas pela UI.
 
 import os
 # Importamos Window apenas quando necessário, dentro da função init_window_settings
-from env import FONT_NAME, TEXT_COLOR, WHITE_COLOR, BLUE_COLOR, icons_dir
+from env import TEXT_COLOR, BACKGROUND_COLOR, icons_dir
 
 # Configurações de janela
 DEFAULT_WINDOW_SIZE = (720, 480)  # tamanho inicial da janela
@@ -22,12 +22,10 @@ def init_window_settings():
     Window.size = DEFAULT_WINDOW_SIZE
     if WINDOW_FULLSCREEN:
         Window.fullscreen = 'auto'
-    Window.clearcolor = WHITE_COLOR
+    Window.clearcolor = BACKGROUND_COLOR
 
 # Configurações de transcrição
-FONT_SIZE_PARTIAL = 35
-MAX_PARTIAL_CHARS = 120  # máximo de caracteres do texto parcial
-PARTIAL_RESET_MS = 3000  # tempo para resetar o texto parcial (ms)
+MAX_PARTIAL_CHARS = 1000  # máximo de caracteres do texto parcial
 
 # Configuração de texto parcial
 def truncate_partial(text, max_chars=MAX_PARTIAL_CHARS, partial_threshold=0.6):

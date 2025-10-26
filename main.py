@@ -1,5 +1,4 @@
 # main.py
-import json
 import os
 import threading
 import sys
@@ -20,12 +19,17 @@ except Exception:
 # from ui import TranscriberApp
 
 BASE_DIR = os.path.dirname(__file__)
-CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
-if os.path.exists(CONFIG_PATH):
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        cfg = json.load(f)
-else:
-    cfg = {}
+
+# Configurações do Transcriber
+cfg = {
+    "model_path": "modelLarge",
+    "sample_rate": 16000,
+    "blocksize": 800,
+    "frame_ms": 30,
+    "use_vad": True,
+    "vad_mode": 2,
+    "device": None
+}
 
 # Eventos de sincronização entre threads
 ble_connected_event = threading.Event()
