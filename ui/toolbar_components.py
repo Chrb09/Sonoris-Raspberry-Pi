@@ -42,7 +42,7 @@ class ToolbarManager:
         self.private_btn = IconButton(icon_src=init_private_icon, text=init_private_text)
         
         # Container para os botões da toolbar
-        self.button_group = BoxLayout(orientation='horizontal', spacing=40, size_hint=(None, None))
+        self.button_group = BoxLayout(orientation='horizontal', spacing=60, size_hint=(None, None))
         
         # Configurações iniciais da toolbar
         self._setup_toolbar()
@@ -54,7 +54,7 @@ class ToolbarManager:
             getattr(self.private_btn, "height", 60),
             getattr(self.pause_btn, "height", 60)
         )
-        self.button_group.width = 180  # largura fixa inicial
+        self.button_group.width = 200  # largura fixa inicial
         
         # Guarda largura original para poder restaurar depois
         self._original_button_group_width = self.button_group.width
@@ -287,7 +287,7 @@ class ToolbarManager:
             new_children = [w for w in (resume_btn, plus_btn) if w is not None]
             # Largura padrão caso o widget ainda não tenha largura definida
             default_btn_w = dp(100)
-            spacing = getattr(self.button_group, "spacing", 40) or 0
+            spacing = getattr(self.button_group, "spacing", 60) or 0
             width_sum = 0
             max_h = 0
             for b in new_children:
@@ -359,7 +359,7 @@ class ToolbarManager:
                 self.button_group.width = self._saved_button_group_width
             else:
                 self.button_group.width = getattr(self, "_original_button_group_width", self.button_group.width)
-            self.button_group.spacing = 40
+            self.button_group.spacing = 60
         except Exception:
             pass
 
