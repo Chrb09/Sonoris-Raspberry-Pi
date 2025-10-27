@@ -79,9 +79,24 @@ def run():
                 return False
                 
             def get_conversations():
-                if transcript_history_ref['instance'] is not None:
-                    return transcript_history_ref['instance'].get_saved_conversations()
-                return []
+                """Retorna lista de conversas salvas, lendo diretamente da pasta transcripts"""
+                import json
+                conversations = []
+                try:
+                    transcripts_dir = os.path.join(BASE_DIR, "transcripts")
+                    if os.path.exists(transcripts_dir):
+                        for file in os.listdir(transcripts_dir):
+                            if file.endswith(".json"):
+                                file_path = os.path.join(transcripts_dir, file)
+                                try:
+                                    with open(file_path, 'r', encoding='utf-8') as f:
+                                        conversations.append(json.load(f))
+                                except Exception as e:
+                                    print(f"[MAIN] Erro ao ler {file}: {e}")
+                except Exception as e:
+                    print(f"[MAIN] Erro ao listar conversas: {e}")
+                print(f"[MAIN] get_conversations retornando {len(conversations)} conversação(ões)")
+                return conversations
             
             # Inicia o servidor BLE com os callbacks
             ble_stop_event, _ = start_ble_server_in_thread(
