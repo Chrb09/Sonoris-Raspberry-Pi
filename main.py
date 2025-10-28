@@ -79,24 +79,66 @@ def run():
                 return False
                 
             def get_conversations():
-                """Retorna lista de conversas salvas, lendo diretamente da pasta transcripts"""
+                """Retorna lista RESUMIDA de conversas (id, created_at, start_ts, end_ts)."""
                 import json
                 conversations = []
                 try:
                     transcripts_dir = os.path.join(BASE_DIR, "transcripts")
                     if os.path.exists(transcripts_dir):
+                        files_with_time = []
                         for file in os.listdir(transcripts_dir):
                             if file.endswith(".json"):
                                 file_path = os.path.join(transcripts_dir, file)
                                 try:
-                                    with open(file_path, 'r', encoding='utf-8') as f:
-                                        conversations.append(json.load(f))
+                                    mtime = os.path.getmtime(file_path)
+                                    files_with_time.append((file_path, mtime))
                                 except Exception as e:
-                                    print(f"[MAIN] Erro ao ler {file}: {e}")
+                                    print(f"[MAIN] Erro ao obter mtime de {file}: {e}")
+                        # ordena mais recentes primeiro e limita a 5
+                        files_with_time.sort(key=lambda x: x[1], reverse=True)
+                        for file_path, _ in files_with_time[:5]:
+                            try:
+                                with open(file_path, 'r', encoding='utf-8') as f:
+                                    data = json.load(f)
+                                    lines = data.get('lines', [])
+                                    start_ts = lines[0]['timestamp'] if lines else data.get('created_at', '')
+                                    end_ts = lines[-1]['timestamp'] if len(lines) > 0 else data.get('created_at', '')
+                                    conversations.append({
+                                        'conversation_id': data.get('conversation_id', ''),
+                                        'created_at': data.get('created_at', ''),
+                                        'start_ts': start_ts,
+                                        'end_ts': end_ts,
+                                    })
+                            except Exception as e:
+                                print(f"[MAIN] Erro ao ler {file_path}: {e}")
                 except Exception as e:
                     print(f"[MAIN] Erro ao listar conversas: {e}")
-                print(f"[MAIN] get_conversations retornando {len(conversations)} conversação(ões)")
+                print(f"[MAIN] get_conversations retornando {len(conversations)} conversação(ões) (resumo)")
                 return conversations
+
+            def get_conversation_by_id(conv_id: str):
+                import json
+                try:
+                    transcripts_dir = os.path.join(BASE_DIR, "transcripts")
+                    file_path = os.path.join(transcripts_dir, f"{conv_id}.json")
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            return json.load(f)
+                except Exception as e:
+                    print(f"[MAIN] Erro ao carregar conversa {conv_id}: {e}")
+                return None
+
+            def delete_conversation(conv_id: str) -> bool:
+                try:
+                    transcripts_dir = os.path.join(BASE_DIR, "transcripts")
+                    file_path = os.path.join(transcripts_dir, f"{conv_id}.json")
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        print(f"[MAIN] Conversa {conv_id} deletada do dispositivo.")
+                        return True
+                except Exception as e:
+                    print(f"[MAIN] Erro ao deletar conversa {conv_id}: {e}")
+                return False
             
             # Inicia o servidor BLE com os callbacks
             ble_stop_event, _ = start_ble_server_in_thread(
@@ -104,7 +146,9 @@ def run():
                 on_stop_cb=on_ble_stop,
                 device_info_cb=get_device_info,
                 set_device_name_cb=set_device_name,
-                get_conversations_cb=get_conversations
+                get_conversations_cb=get_conversations,
+                get_conversation_by_id_cb=get_conversation_by_id,
+                delete_conversation_cb=delete_conversation,
             )
             print("Aguardando conexão Bluetooth, conecte pelo app Sonoris no celular...")
         else:

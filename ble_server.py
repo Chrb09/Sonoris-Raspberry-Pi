@@ -15,14 +15,29 @@ DEVICE_NAME_UUID = "12345678-1234-5678-1234-56789abcdef3"
 CONVERSATIONS_UUID = "12345678-1234-5678-1234-56789abcdef4"
 
 class ConnectService(Service):
-    def __init__(self, on_start_cb=None, on_stop_cb=None, device_info_cb=None, set_device_name_cb=None, get_conversations_cb=None):
+    def __init__(
+        self,
+        on_start_cb=None,
+        on_stop_cb=None,
+        device_info_cb=None,
+        set_device_name_cb=None,
+        get_conversations_cb=None,
+        get_conversation_by_id_cb=None,
+        delete_conversation_cb=None,
+    ):
         super().__init__(SERVICE_UUID, True)
         self.on_start_cb = on_start_cb
         self.on_stop_cb = on_stop_cb
         self.device_info_cb = device_info_cb
         self.set_device_name_cb = set_device_name_cb
         self.get_conversations_cb = get_conversations_cb
+        self.get_conversation_by_id_cb = get_conversation_by_id_cb
+        self.delete_conversation_cb = delete_conversation_cb
         self._device_info = {"device_name": "Sonoris Device", "total_active_time": 0, "total_conversations": 0}
+
+        # Estado simples para comandos
+        self._last_cmd = "LIST"  # LIST | GET | DEL
+        self._last_id = None
 
     @characteristic(CHAR_UUID, CharFlags.WRITE | CharFlags.WRITE_WITHOUT_RESPONSE)
     def connect(self, options):
@@ -43,6 +58,25 @@ class ConnectService(Service):
         elif txt == "STOP":
             if callable(self.on_stop_cb):
                 self.on_stop_cb()
+        elif txt.startswith("LIST"):
+            self._last_cmd = "LIST"
+            self._last_id = None
+        elif txt.startswith("GET:"):
+            self._last_cmd = "GET"
+            self._last_id = txt.split(":", 1)[1].strip()
+        elif txt.startswith("DEL:"):
+            self._last_cmd = "DEL"
+            self._last_id = txt.split(":", 1)[1].strip()
+            # executa delete imediatamente
+            if self._last_id and callable(self.delete_conversation_cb):
+                try:
+                    ok = self.delete_conversation_cb(self._last_id)
+                    print(f"[BLE] Delete conversa '{self._last_id}': {ok}")
+                except Exception as e:
+                    print(f"[BLE] Erro ao deletar conversa '{self._last_id}': {e}")
+            # após deletar, volta para LIST
+            self._last_cmd = "LIST"
+            self._last_id = None
     
     @characteristic(DEVICE_INFO_UUID, CharFlags.READ | CharFlags.NOTIFY)
     def device_info(self, options):
@@ -74,27 +108,52 @@ class ConnectService(Service):
     
     @characteristic(CONVERSATIONS_UUID, CharFlags.READ | CharFlags.NOTIFY)
     def conversations(self, options):
-        # Obtém lista de conversas se disponível
-        conversations_data = []
-        if callable(self.get_conversations_cb):
-            conversations_data = self.get_conversations_cb() or []
-        
-        # Converte para JSON e depois para bytes
         try:
-            conv_json = json.dumps(conversations_data)
-            return bytes(conv_json, 'utf-8')
+            # Modo LIST: retorna lista pequena de conversas (metadados ou poucas conversas)
+            if self._last_cmd == "LIST":
+                conversations_data = []
+                if callable(self.get_conversations_cb):
+                    conversations_data = self.get_conversations_cb() or []
+                conv_json = json.dumps(conversations_data)
+                return bytes(conv_json, 'utf-8')
+            # Modo GET: retorna conversa completa por id
+            elif self._last_cmd == "GET" and self._last_id:
+                full_conv = None
+                if callable(self.get_conversation_by_id_cb):
+                    full_conv = self.get_conversation_by_id_cb(self._last_id)
+                if full_conv is None:
+                    full_conv = {}
+                conv_json = json.dumps(full_conv)
+                # após servir GET, volta para LIST por segurança
+                self._last_cmd = "LIST"
+                self._last_id = None
+                return bytes(conv_json, 'utf-8')
+            else:
+                # fallback
+                return bytes("[]", 'utf-8')
         except Exception as e:
             print(f"[BLE] Erro ao enviar conversas: {e}")
             return bytes("[]", 'utf-8')
 
-async def _ble_main(on_start_cb, on_stop_cb, device_info_cb=None, set_device_name_cb=None, get_conversations_cb=None, stop_event: threading.Event=None):
+async def _ble_main(
+    on_start_cb,
+    on_stop_cb,
+    device_info_cb=None,
+    set_device_name_cb=None,
+    get_conversations_cb=None,
+    get_conversation_by_id_cb=None,
+    delete_conversation_cb=None,
+    stop_event: threading.Event=None,
+):
     bus = await get_message_bus()
     service = ConnectService(
         on_start_cb=on_start_cb, 
         on_stop_cb=on_stop_cb,
         device_info_cb=device_info_cb,
         set_device_name_cb=set_device_name_cb,
-        get_conversations_cb=get_conversations_cb
+        get_conversations_cb=get_conversations_cb,
+        get_conversation_by_id_cb=get_conversation_by_id_cb,
+        delete_conversation_cb=delete_conversation_cb,
     )
     await service.register(bus)
 
@@ -125,7 +184,15 @@ async def _ble_main(on_start_cb, on_stop_cb, device_info_cb=None, set_device_nam
             pass
         print("[BLE] stopped")
 
-def start_ble_server_in_thread(on_start_cb, on_stop_cb, device_info_cb=None, set_device_name_cb=None, get_conversations_cb=None):
+def start_ble_server_in_thread(
+    on_start_cb,
+    on_stop_cb,
+    device_info_cb=None,
+    set_device_name_cb=None,
+    get_conversations_cb=None,
+    get_conversation_by_id_cb=None,
+    delete_conversation_cb=None,
+):
     stop_event = threading.Event()
 
     def target():
@@ -136,6 +203,8 @@ def start_ble_server_in_thread(on_start_cb, on_stop_cb, device_info_cb=None, set
                 device_info_cb, 
                 set_device_name_cb, 
                 get_conversations_cb,
+                get_conversation_by_id_cb,
+                delete_conversation_cb,
                 stop_event
             ))
         except Exception as e:
