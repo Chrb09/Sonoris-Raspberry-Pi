@@ -76,6 +76,8 @@ class TranscriptHistory(GridLayout):
 
     # adiciona linha ao histórico, removendo a mais antiga se necessário
     def add_line(self, text):
+        print(f"\n[ADD_LINE] Recebido: '{text[:50]}...' | Modo Privado: {self.is_private_mode}")
+        
         # cria label com altura variável (size_hint_y=None) e permite quebra de linha via text_size
         lbl = Label(
             text=text,
@@ -110,6 +112,7 @@ class TranscriptHistory(GridLayout):
         
         # Salva a linha se não estiver em modo privado
         if not self.is_private_mode:
+            print(f"[ADD_LINE] Salvando linha (modo privado OFF)")
             timestamp = datetime.datetime.now().isoformat()
             self.saved_lines.append({
                 "text": text,
@@ -117,6 +120,8 @@ class TranscriptHistory(GridLayout):
             })
             # Tenta salvar a linha no arquivo JSON
             self._save_line_to_file(text, timestamp)
+        else:
+            print(f"[ADD_LINE] ⚠️ MODO PRIVADO ATIVO - não salvando")
 
     # limpa todo o histórico
     def clear_all(self):
@@ -136,18 +141,26 @@ class TranscriptHistory(GridLayout):
     
     def _save_line_to_file(self, text, timestamp):
         """Salva uma linha em um arquivo de transcrição"""
+        print(f"\n[SAVE_LINE] Iniciando salvamento...")
+        
         if self.is_private_mode:
+            print(f"[SAVE_LINE] ⚠️ MODO PRIVADO - abortando")
             return
             
         try:
             conversation_file = os.path.join(TRANSCRIPTS_DIR, f"{self.conversation_id}.json")
+            print(f"[SAVE_LINE] Arquivo: {conversation_file}")
+            print(f"[SAVE_LINE] Diretório existe: {os.path.exists(TRANSCRIPTS_DIR)}")
             
             # Verifica se o arquivo já existe
             if os.path.exists(conversation_file):
+                print(f"[SAVE_LINE] Arquivo existe - carregando...")
                 with open(conversation_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
+                print(f"[SAVE_LINE] Linhas existentes: {len(data.get('lines', []))}")
             else:
                 # Cria novo arquivo com estrutura inicial
+                print(f"[SAVE_LINE] Criando novo arquivo...")
                 data = {
                     "conversation_id": self.conversation_id,
                     "created_at": datetime.datetime.now().isoformat(),
@@ -159,13 +172,20 @@ class TranscriptHistory(GridLayout):
                 "text": text,
                 "timestamp": timestamp
             })
+            print(f"[SAVE_LINE] Total de linhas após adicionar: {len(data['lines'])}")
             
             # Salva o arquivo atualizado
             with open(conversation_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            print(f"[SAVE_LINE] ✓ SUCESSO - Arquivo salvo!")
+            print(f"[SAVE_LINE] Tamanho do arquivo: {os.path.getsize(conversation_file)} bytes\n")
                 
         except Exception as e:
-            print(f"Erro ao salvar transcrição: {e}")
+            print(f"[SAVE_LINE] ✗ ERRO ao salvar transcrição: {e}")
+            import traceback
+            print(f"[SAVE_LINE] Traceback completo:")
+            traceback.print_exc()
     
     def _save_current_conversation(self):
         """Salva todas as linhas da conversa atual em um arquivo"""
