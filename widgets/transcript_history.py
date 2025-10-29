@@ -187,7 +187,7 @@ class TranscriptHistory(GridLayout):
             print(f"[SAVE_LINE] Tamanho do arquivo: {os.path.getsize(conversation_file)} bytes\n")
             
             # Envia a conversa completa via BLE
-            self._send_conversation_via_ble(data)
+            self._send_conversation_via_ble()
                 
         except Exception as e:
             print(f"[SAVE_LINE] ✗ ERRO ao salvar transcrição: {e}")
@@ -195,12 +195,19 @@ class TranscriptHistory(GridLayout):
             print(f"[SAVE_LINE] Traceback completo:")
             traceback.print_exc()
     
-    def _send_conversation_via_ble(self, conversation_data):
+    def _send_conversation_via_ble(self):
         """Envia os dados da conversa via BLE para o app"""
         try:
             if self.ble_service_ref is None or self.ble_service_ref.get('instance') is None:
                 print(f"[BLE_SEND] ⚠️ BLE service não disponível - pulando envio")
                 return
+            
+            # Monta os dados da conversa completa
+            conversation_data = {
+                "conversation_id": self.conversation_id,
+                "created_at": datetime.datetime.now().isoformat(),
+                "lines": self.saved_lines
+            }
             
             # Converte os dados para JSON
             json_data = json.dumps(conversation_data, ensure_ascii=False)
