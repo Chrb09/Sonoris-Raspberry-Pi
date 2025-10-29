@@ -7,17 +7,11 @@
 # Sumário
 
 - [Sumário](#sumário)
-  - [🤔 Sobre a Inclusipet](#-sobre-a-Inclusipet)
-  - [📖 Funcionalidades do Sistema](#-funcionalidades-do-sistema)
+  - [🤔 Sobre a Sonoris](#-sobre-a-Sonoris)
   - [✅ Tecnologias Utilizada](#-tecnologias-utilizadas)
-    - [Front end](#front-end-)
-    - [Back end](#back-end-)
-    - [Biblioteca ](#biblioteca-)
-    - [Framework ](#framework-)
-    - [Outros ](#outros-)
-  - [📁 Rodando o Projeto](#-rodando-o-projeto)
+  - [🚀 Como rodar o projeto](#-como-rodar-o-projeto)
   - [❓ FAQ](#-FAQ)
-  - [🐕 Contribuidores](#-contribuidores)
+  - [Contribuidores](#-contribuidores)
 
 ## 🤔 Sobre a Sonoris
 
