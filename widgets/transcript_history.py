@@ -33,7 +33,7 @@ if not os.path.exists(TRANSCRIPTS_DIR):
 
 # widget de histórico (scrollable)
 class TranscriptHistory(GridLayout):
-    def __init__(self, **kwargs):
+    def __init__(self, ble_service_ref=None, **kwargs):
         kwargs.setdefault('padding', 10) 
         super().__init__(**kwargs)
         self.cols = 1
@@ -41,6 +41,9 @@ class TranscriptHistory(GridLayout):
         self.spacing = 10
         self.bind(minimum_height=self.setter('height')) # auto ajusta height ao conteúdo
         self.lines = []
+        
+        # Referência ao BLE service para envio de transcrições
+        self.ble_service_ref = ble_service_ref
         
         # Inicializa o gerenciador de informações do dispositivo
         self.device_info = DeviceInfo()
@@ -120,6 +123,8 @@ class TranscriptHistory(GridLayout):
             })
             # Tenta salvar a linha no arquivo JSON
             self._save_line_to_file(text, timestamp)
+            # Envia via BLE para o app
+            self._send_conversation_via_ble()
         else:
             print(f"[ADD_LINE] ⚠️ MODO PRIVADO ATIVO - não salvando")
 
@@ -180,11 +185,36 @@ class TranscriptHistory(GridLayout):
             
             print(f"[SAVE_LINE] ✓ SUCESSO - Arquivo salvo!")
             print(f"[SAVE_LINE] Tamanho do arquivo: {os.path.getsize(conversation_file)} bytes\n")
+            
+            # Envia a conversa completa via BLE
+            self._send_conversation_via_ble(data)
                 
         except Exception as e:
             print(f"[SAVE_LINE] ✗ ERRO ao salvar transcrição: {e}")
             import traceback
             print(f"[SAVE_LINE] Traceback completo:")
+            traceback.print_exc()
+    
+    def _send_conversation_via_ble(self, conversation_data):
+        """Envia os dados da conversa via BLE para o app"""
+        try:
+            if self.ble_service_ref is None or self.ble_service_ref.get('instance') is None:
+                print(f"[BLE_SEND] ⚠️ BLE service não disponível - pulando envio")
+                return
+            
+            # Converte os dados para JSON
+            json_data = json.dumps(conversation_data, ensure_ascii=False)
+            print(f"[BLE_SEND] 📤 Enviando {len(json_data)} chars via BLE...")
+            print(f"[BLE_SEND] Preview: {json_data[:100]}...")
+            
+            # Envia via BLE service
+            ble_service = self.ble_service_ref['instance']
+            ble_service.send_transcription_data(json_data)
+            
+            print(f"[BLE_SEND] ✓ Dados enviados com sucesso!")
+        except Exception as e:
+            print(f"[BLE_SEND] ❌ Erro ao enviar via BLE: {e}")
+            import traceback
             traceback.print_exc()
     
     def _save_current_conversation(self):
@@ -225,6 +255,49 @@ class TranscriptHistory(GridLayout):
         # Atualiza o tempo ativo antes de retornar
         self.device_info.update_active_time()
         return self.device_info.get_device_data_for_bluetooth()
+    
+    def update_device_name(self, name):
+        """Atualiza o nome do dispositivo"""
+        try:
+            return self.device_info.update_device_name(name)
+        except Exception as e:
+            print(f"[DEVICE_INFO] Erro ao atualizar nome: {e}")
+            return False
+    
+    def _send_conversation_via_ble(self):
+        """Envia a conversa atual completa via BLE para o app"""
+        try:
+            # Verifica se temos referência ao BLE service
+            if not self.ble_service_ref or not self.ble_service_ref.get('instance'):
+                print("[BLE_SEND] ⚠️ BLE service não disponível - ignorando envio")
+                return
+            
+            # Monta o JSON da conversa completa
+            conversation_data = {
+                "conversation_id": self.conversation_id,
+                "created_at": datetime.datetime.now().isoformat(),
+                "lines": self.saved_lines
+            }
+            
+            # Converte para string JSON
+            json_str = json.dumps(conversation_data, ensure_ascii=False)
+            
+            print(f"[BLE_SEND] 📤 Enviando conversa via BLE...")
+            print(f"[BLE_SEND] 🔑 Conversation ID: {self.conversation_id}")
+            print(f"[BLE_SEND] 📊 Total de linhas: {len(self.saved_lines)}")
+            print(f"[BLE_SEND] 📦 Tamanho do JSON: {len(json_str)} bytes")
+            print(f"[BLE_SEND] 📄 Preview: {json_str[:100]}...")
+            
+            # Envia via BLE service
+            ble_service = self.ble_service_ref['instance']
+            ble_service.send_transcription_data(json_str)
+            
+            print(f"[BLE_SEND] ✅ Envio BLE concluído!\n")
+            
+        except Exception as e:
+            print(f"[BLE_SEND] ❌ ERRO ao enviar via BLE: {e}")
+            import traceback
+            traceback.print_exc()
         
     def update_device_name(self, name):
         """Atualiza o nome do dispositivo (apenas via Bluetooth)"""

@@ -18,24 +18,26 @@ class MainLayout(BoxLayout):
     Integra todos os componentes da interface.
     """
     
-    def __init__(self, transcriber, **kwargs):
+    def __init__(self, transcriber, ble_service_ref=None, **kwargs):
         """
         Inicializa o layout principal.
         
         Args:
             transcriber: Instância do gerenciador de transcrição
+            ble_service_ref: Referência ao BLE service para envio de transcrições
             **kwargs: Argumentos adicionais para o BoxLayout
         """
         super().__init__(orientation='vertical', **kwargs)
         
         # Armazena referência ao transcriber
         self.transcriber = transcriber
+        self.ble_service_ref = ble_service_ref
         
         # Gerenciador de estado da UI
         self.ui_state = UIState()
         
         # Gerenciador de transcrições
-        self.transcription_manager = TranscriptionManager(ui_state=self.ui_state)
+        self.transcription_manager = TranscriptionManager(ui_state=self.ui_state, ble_service_ref=ble_service_ref)
         scroll, partial_scroll = self.transcription_manager.get_components()
         self.scroll = scroll
         self.partial_scroll = partial_scroll

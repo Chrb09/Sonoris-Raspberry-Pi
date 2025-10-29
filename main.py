@@ -56,6 +56,9 @@ def on_ble_stop():
 def run():
     global ble_stop_event
 
+    # Variável para armazenar referência do BLE service
+    ble_service_ref = None
+
     if SKIP_BLE:
         print("[MAIN] MODO DE TESTE ATIVADO: pulando BLE e iniciando UI/transcriber diretamente.")
         # criar um evento para evitar None no finally e setar conexão como já estabelecida
@@ -141,7 +144,7 @@ def run():
                 return False
             
             # Inicia o servidor BLE com os callbacks
-            ble_stop_event, _ = start_ble_server_in_thread(
+            ble_stop_event, _, ble_service_ref = start_ble_server_in_thread(
                 on_start_cb=on_ble_start, 
                 on_stop_cb=on_ble_stop,
                 device_info_cb=get_device_info,
@@ -170,7 +173,7 @@ def run():
             transcriber = Transcriber(cfg)
 
             # cria app Kivy (auto_start True faz com que o transcriber seja iniciado no on_start do Kivy)
-            app = TranscriberApp(transcriber=transcriber, auto_start=True)
+            app = TranscriberApp(transcriber=transcriber, auto_start=True, ble_service_ref=ble_service_ref)
             
             # Aguarda o app iniciar e então salva referência ao TranscriptHistory para uso no BLE
             from kivy.clock import Clock

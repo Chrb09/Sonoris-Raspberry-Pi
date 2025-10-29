@@ -13,6 +13,7 @@ CHAR_UUID    = "12345678-1234-5678-1234-56789abcdef1"
 DEVICE_INFO_UUID = "12345678-1234-5678-1234-56789abcdef2"
 DEVICE_NAME_UUID = "12345678-1234-5678-1234-56789abcdef3"
 CONVERSATIONS_UUID = "12345678-1234-5678-1234-56789abcdef4"
+TRANSCRIPTION_STREAM_UUID = "12345678-1234-5678-1234-56789abcdef5"
 
 class ConnectService(Service):
     def __init__(
@@ -38,6 +39,9 @@ class ConnectService(Service):
         # Estado simples para comandos
         self._last_cmd = "LIST"  # LIST | GET | DEL
         self._last_id = None
+        
+        # Buffer para stream de transcrições
+        self._transcription_buffer = b""
 
     @characteristic(CHAR_UUID, CharFlags.WRITE | CharFlags.WRITE_WITHOUT_RESPONSE)
     def connect(self, options):
@@ -134,6 +138,23 @@ class ConnectService(Service):
         except Exception as e:
             print(f"[BLE] Erro ao enviar conversas: {e}")
             return bytes("[]", 'utf-8')
+    
+    @characteristic(TRANSCRIPTION_STREAM_UUID, CharFlags.READ | CharFlags.NOTIFY)
+    def transcription_stream(self, options):
+        """Characteristic para stream de transcrições em tempo real."""
+        result = self._transcription_buffer
+        self._transcription_buffer = b""  # Limpa o buffer após leitura
+        return result
+    
+    def send_transcription_data(self, json_data: str):
+        """Envia dados de transcrição via notify. Chamado externamente."""
+        try:
+            print(f"[BLE] 📤 Enviando transcrição: {json_data[:100]}...")
+            self._transcription_buffer = bytes(json_data, 'utf-8')
+            # Trigger notify (precisa ser implementado quando integrado)
+            # Por enquanto, o buffer será lido quando o app fizer read
+        except Exception as e:
+            print(f"[BLE] ❌ Erro ao preparar transcrição para envio: {e}")
 
 async def _ble_main(
     on_start_cb,
@@ -144,6 +165,7 @@ async def _ble_main(
     get_conversation_by_id_cb=None,
     delete_conversation_cb=None,
     stop_event: threading.Event=None,
+    service_ref: dict=None,
 ):
     bus = await get_message_bus()
     service = ConnectService(
@@ -155,6 +177,11 @@ async def _ble_main(
         get_conversation_by_id_cb=get_conversation_by_id_cb,
         delete_conversation_cb=delete_conversation_cb,
     )
+    
+    # Armazena referência do service para acesso externo
+    if service_ref is not None:
+        service_ref['instance'] = service
+    
     await service.register(bus)
 
     advert = None
@@ -194,6 +221,7 @@ def start_ble_server_in_thread(
     delete_conversation_cb=None,
 ):
     stop_event = threading.Event()
+    service_ref = {'instance': None}  # Para armazenar referência do service
 
     def target():
         try:
@@ -205,11 +233,12 @@ def start_ble_server_in_thread(
                 get_conversations_cb,
                 get_conversation_by_id_cb,
                 delete_conversation_cb,
-                stop_event
+                stop_event,
+                service_ref
             ))
         except Exception as e:
             print("[BLE] exceção no loop async:", e)
 
     th = threading.Thread(target=target, daemon=True)
     th.start()
-    return stop_event, th
+    return stop_event, th, service_ref

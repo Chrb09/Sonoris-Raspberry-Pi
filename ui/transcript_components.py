@@ -20,10 +20,11 @@ class TranscriptionManager:
     Gerencia a exibição e o histórico de transcrições.
     """
     
-    def __init__(self, ui_state=None):
+    def __init__(self, ui_state=None, ble_service_ref=None):
         """Inicializa o gerenciador de transcrições."""
         self._partial_reset_ev = None
         self.ui_state = ui_state
+        self.ble_service_ref = ble_service_ref
         
         # Cria componentes de UI para transcrição
         self._setup_ui_components()
@@ -45,7 +46,7 @@ class TranscriptionManager:
             do_scroll_x=False,
             do_scroll_y=True
         )
-        self.history = TranscriptHistory()
+        self.history = TranscriptHistory(ble_service_ref=self.ble_service_ref)
         self.scroll.add_widget(self.history)
         
         # Atualiza a altura do histórico quando a janela for redimensionada

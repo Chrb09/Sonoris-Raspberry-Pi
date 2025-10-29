@@ -12,19 +12,21 @@ from ui.main_layout import MainLayout
 from ui.ui_config import truncate_partial, init_window_settings, UI_TEXTS, ICON_PATHS
 
 class TranscriberApp(App):
-    def __init__(self, transcriber: Transcriber, auto_start=True, **kwargs):
+    def __init__(self, transcriber: Transcriber, auto_start=True, ble_service_ref=None, **kwargs):
         """
         Inicializa o aplicativo.
         
         Args:
             transcriber: Instância do transcriber para processar áudio
             auto_start: Se True, inicia o transcriber automaticamente
+            ble_service_ref: Referência ao BLE service para envio de transcrições
             **kwargs: Argumentos adicionais para o App
         """
         super().__init__(**kwargs)
         self.transcriber = transcriber
         self.layout = None 
         self._auto_start = auto_start
+        self.ble_service_ref = ble_service_ref
 
     def build(self):
         """
@@ -38,7 +40,7 @@ class TranscriberApp(App):
         
         self.title = UI_TEXTS['app_title']
         self.icon = ICON_PATHS['app_icon']
-        self.layout = MainLayout(self.transcriber)
+        self.layout = MainLayout(self.transcriber, ble_service_ref=self.ble_service_ref)
         return self.layout
 
     def on_start(self):
