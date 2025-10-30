@@ -7,27 +7,34 @@
 # Sumário
 
 - [Sumário](#sumário)
-  - [🤔 Sobre a Sonoris](#-sobre-a-Sonoris)
-  - [✅ Tecnologias Utilizada](#-tecnologias-utilizadas)
-  - [🚀 Como rodar o projeto](#-como-rodar-o-projeto)
-  - [❓ FAQ](#-FAQ)
-  - [Contribuidores](#-contribuidores)
+  - [🌟 Sobre a Sonoris](#sobre-a-sonoris)
+  - [💻 Tecnologias Utilizada](#tecnologias-utilizadas)
+  - [🚀 Como rodar o projeto](#como-rodar-o-projeto)
+  - [❓ FAQ](#FAQ)
+  - [Contribuidores](#contribuidores)
 
-## 🤔 Sobre a Sonoris
+## 🌟 Sobre a Sonoris
 
-<b>Sonoris</b> é um aplicativo e dispositivo inovador, desenvolvido ao longo de 2025 em parceria com uma empresa, como parte do Trabalho de Conclusão de Curso (TCC) do curso de Desenvolvimento de Sistemas AMS da Etec da Zona Leste.
+<b>Sonoris</b> é um aplicativo e dispositivo inovador, desenvolvido ao longo de 2025 em parceria com uma empresa, como parte do Trabalho de Conclusão de Curso (TCC) do curso de **Desenvolvimento de Sistemas AMS da Etec da Zona Leste**.
 
-### Funcionalidades
-O projeto conta com um dispositivo IoT que capta a fala humana por meio de um microfone omnidirecional e faz a lógica de transcrição no microcomputador Raspberry Pi, apresentando as como legendas em um display lcd e é passada para o aplicativo mobile por bluetooth. Não apenas isso mas caso o usuário queira, ele pode ativar o modo privado para que suas conversas captadas não sejam armazenadas no aplicativo
+O projeto tem como propósito **facilitar a comunicação e promover a inclusão de pessoas surdas**, principalmente em contextos profissionais e acadêmicos.
 
-O aplicativo tem como funcionalidades a criação e configuração da conta do usuário, das categorias de respostas rápidas e das respostas rápidas, que ao serem utilizadas reproduzem o som da resposta desejada. Além disso, o usuário também pode customizar as legendas do dispositivo e lhe configura-lo, alterando a fonte, o tamanho da fonte, o espaçamento horizontal, etc. Como já citado anteriormente, caso a opção de privado presente no dispositivo esteja desativada, as conversas captadas são recebidas e salvas no aplicativo.
+
+### Principais funcionalidades
+O projeto conta com um dispositivo IoT que capta a fala humana por meio de um microfone omnidirecional e realiza a transcrição em um microcomputador Raspberry Pi. As legendas geradas são exibidas em um display LCD e também enviadas ao aplicativo mobile via Bluetooth.
+
+Caso o usuário prefira, é possível ativar o modo privado, garantindo que as conversas captadas não sejam armazenadas no aplicativo.
+
+O aplicativo permite a criação e configuração de contas de usuário, além da personalização de categorias e respostas rápidas — que podem ser reproduzidas em áudio ao serem acionadas.
+
+Também é possível customizar as legendas do dispositivo, ajustando fonte, tamanho, espaçamento horizontal e outras preferências. Quando o modo privado está desativado, as conversas captadas são sincronizadas e armazenadas no aplicativo.
 
 ### Todos os repositórios
 - <b> [Aplicativo](https://github.com/Beatriz02020/Sonoris-iot-app-transcricao) </b><br>
 - <b> [Dispositivo](https://github.com/Chrb09/Sonoris-RaspberryPi) </b><br>
 - <b> [Documentação](https://github.com/Beatriz02020/Sonoris-iot-app-transcricao/tree/documentation?tab=readme-ov-file) </b>
 
-## 💻 Tecnologias
+## 💻 Tecnologias utilizadas
 ### Aplicativo
 
 ![dart](https://img.shields.io/badge/dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
@@ -35,28 +42,44 @@ O aplicativo tem como funcionalidades a criação e configuração da conta do u
 
 ### Dispositivo
 ![python](https://img.shields.io/badge/python-0175C2?style=for-the-badge&logo=python&logoColor=white)
+![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-A22846?style=for-the-badge&logo=raspberrypi&logoColor=white)
+![Bluetooth](https://img.shields.io/badge/Bluetooth-0082FC?style=for-the-badge&logo=bluetooth&logoColor=white)
+
 
 ## 🚀 Como rodar o projeto
 ### Aplicativo
 ```sh
+# clone o repositório
 git clone https://github.com/Beatriz02020/Sonoris-app.git
 
+# acesse o diretório
 cd sonoris-app
 
+# instale as dependências
 flutter pub get
+
+# rode o aplicativo
+flutter run
 ```
+
 ### Dispositivo
 ```sh
-git clone https://github.com/Beatriz02020/Sonoris-app.git
+# clone o repositório
+git clone https://github.com/Beatriz02020/Sonoris-device.git
 
-cd sonoris-app
+# acesse o diretório
+cd sonoris-device
 
-flutter pub get
+# instale as dependências
+pip install -r requirements.txt
+
+# execute o script principal
+python main.py
 ```
 
 ## ❓ FAQ
-### **O design do site foi criado com qual ferramenta?**
-A Sonoris foi criado utilizando o [ **Figma**](https://www.figma.com/file/L4PJEj1teaiU0Gs0vkBkwf/Figma-Inclusipet-Oficial?type=design&node-id=0-1&mode=design&t=fGISzfXShJrtB8nw-0).
+### **O design do projeto foi criado com qual ferramenta?**
+O design da Sonoris foi elaborado utilizando a ferramenta de design [ **Figma**](www.figma.com/design/gNida4bnTd89phUpLydH89/Figma-Oficial-Sonoris?node-id=0-1&p=f&t=ruMUI67KIcO3A3is-0).
 
 
 ## 😀 Contribuidores
