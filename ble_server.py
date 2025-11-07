@@ -25,6 +25,7 @@ class ConnectService(Service):
         get_conversations_cb=None,
         get_conversation_by_id_cb=None,
         delete_conversation_cb=None,
+        set_settings_cb=None,
     ):
         super().__init__(SERVICE_UUID, True)
         self.on_start_cb = on_start_cb
@@ -34,6 +35,7 @@ class ConnectService(Service):
         self.get_conversations_cb = get_conversations_cb
         self.get_conversation_by_id_cb = get_conversation_by_id_cb
         self.delete_conversation_cb = delete_conversation_cb
+        self.set_settings_cb = set_settings_cb
         self._device_info = {"device_name": "Sonoris Device", "total_active_time": 0, "total_conversations": 0}
 
         # Estado simples para comandos
@@ -62,6 +64,19 @@ class ConnectService(Service):
         elif txt == "STOP":
             if callable(self.on_stop_cb):
                 self.on_stop_cb()
+        elif txt.startswith("SETTINGS:"):
+            # Processa configurações de legendas enviadas pelo app
+            try:
+                payload = txt.split(":", 1)[1]
+                settings = json.loads(payload)
+                print(f"[BLE] Settings recebidos: {settings}")
+                if callable(self.set_settings_cb):
+                    self.set_settings_cb(settings)
+                    print(f"[BLE] Settings aplicados com sucesso!")
+                else:
+                    print(f"[BLE] Aviso: set_settings_cb não definido")
+            except Exception as e:
+                print(f"[BLE] Erro ao processar SETTINGS: {e}")
         elif txt.startswith("LIST"):
             self._last_cmd = "LIST"
             self._last_id = None
@@ -164,6 +179,7 @@ async def _ble_main(
     get_conversations_cb=None,
     get_conversation_by_id_cb=None,
     delete_conversation_cb=None,
+    set_settings_cb=None,
     stop_event: threading.Event=None,
     service_ref: dict=None,
 ):
@@ -176,6 +192,7 @@ async def _ble_main(
         get_conversations_cb=get_conversations_cb,
         get_conversation_by_id_cb=get_conversation_by_id_cb,
         delete_conversation_cb=delete_conversation_cb,
+        set_settings_cb=set_settings_cb,
     )
     
     # Armazena referência do service para acesso externo
@@ -219,6 +236,7 @@ def start_ble_server_in_thread(
     get_conversations_cb=None,
     get_conversation_by_id_cb=None,
     delete_conversation_cb=None,
+    set_settings_cb=None,
 ):
     stop_event = threading.Event()
     service_ref = {'instance': None}  # Para armazenar referência do service
@@ -233,6 +251,7 @@ def start_ble_server_in_thread(
                 get_conversations_cb,
                 get_conversation_by_id_cb,
                 delete_conversation_cb,
+                set_settings_cb,
                 stop_event,
                 service_ref
             ))

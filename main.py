@@ -53,11 +53,52 @@ def on_ble_stop():
     ble_disconnected_event.set()
     ble_connected_event.clear()
 
+def apply_settings_to_ui(app, env_module):
+    """Aplica as configurações de env nas widgets da UI existentes"""
+    try:
+        print(f"[APPLY_UI] 🎨 Aplicando settings nos widgets...")
+        
+        if not hasattr(app, 'layout'):
+            print(f"[APPLY_UI] ⚠️ App sem layout ainda")
+            return
+        
+        layout = app.layout
+        
+        # Atualiza o label parcial
+        if hasattr(layout, 'transcription_manager'):
+            tm = layout.transcription_manager
+            
+            # Atualiza partial label
+            if hasattr(tm, 'partial_label'):
+                tm.partial_label.font_size = env_module.FONT_SIZE_PARTIAL
+                tm.partial_label.font_name = env_module.FONT_NAME
+                tm.partial_label.color = env_module.TEXT_COLOR
+                tm.partial_label.line_height = env_module.LINE_HEIGHT
+                print(f"[APPLY_UI]   ✓ Partial label atualizado")
+            
+            # Atualiza labels do histórico
+            if hasattr(tm, 'history') and hasattr(tm.history, 'lines'):
+                for label in tm.history.lines:
+                    label.font_size = env_module.FONT_SIZE_HISTORY
+                    label.font_name = env_module.FONT_NAME
+                    label.color = env_module.TEXT_COLOR
+                    label.line_height = env_module.LINE_HEIGHT
+                print(f"[APPLY_UI]   ✓ {len(tm.history.lines)} labels do histórico atualizados")
+        
+        print(f"[APPLY_UI] ✓ Settings aplicados com sucesso!")
+    except Exception as e:
+        print(f"[APPLY_UI] ❌ Erro ao aplicar settings na UI: {e}")
+        import traceback
+        traceback.print_exc()
+
 def run():
     global ble_stop_event
 
     # Variável para armazenar referência do BLE service
     ble_service_ref = None
+    
+    # Variável para armazenar referência do app Kivy (para aplicar settings)
+    app_ref = {'instance': None}
 
     if SKIP_BLE:
         print("[MAIN] MODO DE TESTE ATIVADO: pulando BLE e iniciando UI/transcriber diretamente.")
@@ -143,6 +184,71 @@ def run():
                     print(f"[MAIN] Erro ao deletar conversa {conv_id}: {e}")
                 return False
             
+            def set_settings(settings_dict):
+                """Callback que recebe configurações de legendas do app e aplica na UI"""
+                try:
+                    print(f"[MAIN] 🎨 Aplicando configurações de legendas: {settings_dict}")
+                    
+                    # Importa módulo env para modificar variáveis
+                    import env
+                    
+                    # Converte cores de hex para tupla RGBA normalizada (0-1)
+                    def hex_to_rgba(hex_color):
+                        hex_color = hex_color.lstrip('#')
+                        if len(hex_color) == 6:
+                            r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+                            return (r/255.0, g/255.0, b/255.0, 1.0)
+                        return (0.168, 0.168, 0.168, 1.0)  # fallback
+                    
+                    # Atualiza variáveis de configuração em memória
+                    if 'textColor' in settings_dict:
+                        env.TEXT_COLOR = hex_to_rgba(settings_dict['textColor'])
+                        print(f"[MAIN]   - TEXT_COLOR: {env.TEXT_COLOR}")
+                    
+                    if 'fontSize' in settings_dict:
+                        font_size = float(settings_dict['fontSize'])
+                        env.FONT_SIZE = font_size
+                        env.FONT_SIZE_PARTIAL = font_size
+                        env.FONT_SIZE_HISTORY = int(font_size * 0.65)
+                        print(f"[MAIN]   - FONT_SIZE: {env.FONT_SIZE} (history: {env.FONT_SIZE_HISTORY})")
+                    
+                    if 'fontWeight' in settings_dict:
+                        weight = int(settings_dict['fontWeight'])
+                        env.FONT_WEIGHT = weight
+                        # Registra o novo peso se necessário
+                        env.FONT_NAME = env.register_font_weight(weight)
+                        print(f"[MAIN]   - FONT_WEIGHT: {env.FONT_WEIGHT} -> {env.FONT_NAME}")
+                    
+                    if 'lineHeight' in settings_dict:
+                        env.LINE_HEIGHT = float(settings_dict['lineHeight'])
+                        print(f"[MAIN]   - LINE_HEIGHT: {env.LINE_HEIGHT}")
+                    
+                    if 'fontFamily' in settings_dict:
+                        family = settings_dict['fontFamily']
+                        env.FONT_FAMILY = family
+                        # Reregistra a fonte com a nova família
+                        font_file = env.get_font_file(family, env.FONT_WEIGHT)
+                        if font_file:
+                            from kivy.core.text import LabelBase
+                            env.FONT_NAME = family
+                            LabelBase.register(name=env.FONT_NAME, fn_regular=font_file)
+                            print(f"[MAIN]   - FONT_FAMILY: {family} -> {font_file}")
+                        else:
+                            print(f"[MAIN]   - ⚠️ Fonte {family} não encontrada, mantendo atual")
+                    
+                    # Aplica as configurações na UI do Kivy se o app já estiver rodando
+                    if app_ref['instance'] is not None:
+                        from kivy.clock import Clock
+                        Clock.schedule_once(lambda dt: apply_settings_to_ui(app_ref['instance'], env), 0.1)
+                        print(f"[MAIN] ✓ Configurações agendadas para aplicação na UI")
+                    else:
+                        print(f"[MAIN] ℹ️ App não iniciado ainda - settings serão usados ao criar widgets")
+                    
+                except Exception as e:
+                    print(f"[MAIN] ❌ Erro ao aplicar settings: {e}")
+                    import traceback
+                    traceback.print_exc()
+            
             # Inicia o servidor BLE com os callbacks
             ble_stop_event, _, ble_service_ref = start_ble_server_in_thread(
                 on_start_cb=on_ble_start, 
@@ -152,6 +258,7 @@ def run():
                 get_conversations_cb=get_conversations,
                 get_conversation_by_id_cb=get_conversation_by_id,
                 delete_conversation_cb=delete_conversation,
+                set_settings_cb=set_settings,
             )
             print("Aguardando conexão Bluetooth, conecte pelo app Sonoris no celular...")
         else:
@@ -174,6 +281,9 @@ def run():
 
             # cria app Kivy (auto_start True faz com que o transcriber seja iniciado no on_start do Kivy)
             app = TranscriberApp(transcriber=transcriber, auto_start=True, ble_service_ref=ble_service_ref)
+            
+            # Salva referência do app para permitir aplicação de settings
+            app_ref['instance'] = app
             
             # Aguarda o app iniciar e então salva referência ao TranscriptHistory para uso no BLE
             from kivy.clock import Clock
