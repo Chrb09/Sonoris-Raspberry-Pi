@@ -52,20 +52,24 @@ class ConnectService(Service):
     @connect.setter
     def connect(self, value, options):
         try:
-            txt = bytes(value).decode('utf-8').strip().upper()
+            txt = bytes(value).decode('utf-8').strip()
         except Exception:
             txt = ""
         
         print(f"[BLE] Comando recebido: '{txt}'")
 
-        if txt == "START":
+        # Usa upper() apenas para comparação, não para processar o payload
+        txt_upper = txt.upper()
+        
+        if txt_upper == "START":
             if callable(self.on_start_cb):
                 self.on_start_cb()
-        elif txt == "STOP":
+        elif txt_upper == "STOP":
             if callable(self.on_stop_cb):
                 self.on_stop_cb()
-        elif txt.startswith("SETTINGS:"):
+        elif txt_upper.startswith("SETTINGS:"):
             # Processa configurações de legendas enviadas pelo app
+            # IMPORTANTE: usa txt original (não upper) para preservar case do JSON
             try:
                 payload = txt.split(":", 1)[1]
                 settings = json.loads(payload)
@@ -77,13 +81,13 @@ class ConnectService(Service):
                     print(f"[BLE] Aviso: set_settings_cb não definido")
             except Exception as e:
                 print(f"[BLE] Erro ao processar SETTINGS: {e}")
-        elif txt.startswith("LIST"):
+        elif txt_upper.startswith("LIST"):
             self._last_cmd = "LIST"
             self._last_id = None
-        elif txt.startswith("GET:"):
+        elif txt_upper.startswith("GET:"):
             self._last_cmd = "GET"
             self._last_id = txt.split(":", 1)[1].strip()
-        elif txt.startswith("DEL:"):
+        elif txt_upper.startswith("DEL:"):
             self._last_cmd = "DEL"
             self._last_id = txt.split(":", 1)[1].strip()
             # executa delete imediatamente
