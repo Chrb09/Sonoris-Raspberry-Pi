@@ -5,12 +5,14 @@ Este módulo contém a classe de layout principal que integra todos os component
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
+from kivy.graphics import Color, Rectangle
 
 from ui.ui_config import truncate_partial, UI_TEXTS
 from ui.toolbar_components import ToolbarManager
 from ui.transcript_components import TranscriptionManager
 from ui.dialogs import PrivateDialog
 from ui.ui_state_manager import UIState
+import env
 
 class MainLayout(BoxLayout):
     """
@@ -28,6 +30,14 @@ class MainLayout(BoxLayout):
             **kwargs: Argumentos adicionais para o BoxLayout
         """
         super().__init__(orientation='vertical', **kwargs)
+        
+        # Define a cor de fundo
+        with self.canvas.before:
+            self.bg_color = Color(*env.BACKGROUND_COLOR)
+            self.bg_rect = Rectangle(pos=self.pos, size=self.size)
+        
+        # Vincula a atualização do retângulo quando o layout mudar de tamanho/posição
+        self.bind(pos=self._update_bg_rect, size=self._update_bg_rect)
         
         # Armazena referência ao transcriber
         self.transcriber = transcriber
@@ -67,6 +77,11 @@ class MainLayout(BoxLayout):
         # Estados UI salvos (para restaurar após pausa)
         self._saved_partial_props = None
         self._saved_scroll_props = None
+    
+    def _update_bg_rect(self, *args):
+        """Atualiza o retângulo de fundo quando o layout muda de tamanho."""
+        self.bg_rect.pos = self.pos
+        self.bg_rect.size = self.size
     
     def set_partial(self, text):
         """

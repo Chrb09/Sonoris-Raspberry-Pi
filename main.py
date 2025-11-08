@@ -85,6 +85,11 @@ def apply_settings_to_ui(app, env_module):
                     label.line_height = env_module.LINE_HEIGHT
                 print(f"[APPLY_UI]   ✓ {len(tm.history.lines)} labels do histórico atualizados")
         
+        # Atualiza cor de fundo do layout principal
+        if hasattr(layout, 'bg_color'):
+            layout.bg_color.rgba = env_module.BACKGROUND_COLOR
+            print(f"[APPLY_UI]   ✓ Cor de fundo atualizada: {env_module.BACKGROUND_COLOR}")
+        
         print(f"[APPLY_UI] ✓ Settings aplicados com sucesso!")
     except Exception as e:
         print(f"[APPLY_UI] ❌ Erro ao aplicar settings na UI: {e}")
@@ -207,6 +212,10 @@ def run():
                     if 'textcolor' in settings_normalized:
                         env.TEXT_COLOR = hex_to_rgba(settings_normalized['textcolor'])
                         print(f"[MAIN]   - TEXT_COLOR: {env.TEXT_COLOR}")
+                    
+                    if 'bgcolor' in settings_normalized:
+                        env.BACKGROUND_COLOR = hex_to_rgba(settings_normalized['bgcolor'])
+                        print(f"[MAIN]   - BACKGROUND_COLOR: {env.BACKGROUND_COLOR}")
                     
                     if 'fontsize' in settings_normalized:
                         font_size = float(settings_normalized['fontsize'])
