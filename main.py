@@ -200,31 +200,34 @@ def run():
                             return (r/255.0, g/255.0, b/255.0, 1.0)
                         return (0.168, 0.168, 0.168, 1.0)  # fallback
                     
+                    # Normaliza chaves para lowercase (compatibilidade caso ble_server envie uppercase)
+                    settings_normalized = {k.lower(): v for k, v in settings_dict.items()}
+                    
                     # Atualiza variáveis de configuração em memória
-                    if 'textColor' in settings_dict:
-                        env.TEXT_COLOR = hex_to_rgba(settings_dict['textColor'])
+                    if 'textcolor' in settings_normalized:
+                        env.TEXT_COLOR = hex_to_rgba(settings_normalized['textcolor'])
                         print(f"[MAIN]   - TEXT_COLOR: {env.TEXT_COLOR}")
                     
-                    if 'fontSize' in settings_dict:
-                        font_size = float(settings_dict['fontSize'])
+                    if 'fontsize' in settings_normalized:
+                        font_size = float(settings_normalized['fontsize'])
                         env.FONT_SIZE = font_size
                         env.FONT_SIZE_PARTIAL = font_size
                         env.FONT_SIZE_HISTORY = int(font_size * 0.65)
                         print(f"[MAIN]   - FONT_SIZE: {env.FONT_SIZE} (history: {env.FONT_SIZE_HISTORY})")
                     
-                    if 'fontWeight' in settings_dict:
-                        weight = int(settings_dict['fontWeight'])
+                    if 'fontweight' in settings_normalized:
+                        weight = int(settings_normalized['fontweight'])
                         env.FONT_WEIGHT = weight
                         # Registra o novo peso se necessário
                         env.FONT_NAME = env.register_font_weight(weight)
                         print(f"[MAIN]   - FONT_WEIGHT: {env.FONT_WEIGHT} -> {env.FONT_NAME}")
                     
-                    if 'lineHeight' in settings_dict:
-                        env.LINE_HEIGHT = float(settings_dict['lineHeight'])
+                    if 'lineheight' in settings_normalized:
+                        env.LINE_HEIGHT = float(settings_normalized['lineheight'])
                         print(f"[MAIN]   - LINE_HEIGHT: {env.LINE_HEIGHT}")
                     
-                    if 'fontFamily' in settings_dict:
-                        family = settings_dict['fontFamily']
+                    if 'fontfamily' in settings_normalized:
+                        family = settings_normalized['fontfamily']
                         env.FONT_FAMILY = family
                         # Reregistra a fonte com a nova família
                         font_file = env.get_font_file(family, env.FONT_WEIGHT)
