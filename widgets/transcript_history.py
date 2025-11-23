@@ -182,8 +182,6 @@ class TranscriptHistory(GridLayout):
             })
             # Tenta salvar a linha no arquivo JSON
             self._save_line_to_file(text, timestamp)
-            # Envia via BLE para o app
-            self._send_conversation_via_ble()
         else:
             print(f"[ADD_LINE] ⚠️ MODO PRIVADO ATIVO - não salvando")
 
