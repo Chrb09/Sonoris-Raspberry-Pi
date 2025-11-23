@@ -191,8 +191,8 @@ def run():
                         lines = data.get('lines', [])
                         total_lines = len(lines)
                         
-                        # Define tamanho do chunk (5 linhas por vez para ficar seguro)
-                        CHUNK_SIZE = 5
+                        # Define tamanho do chunk (4 linhas x 40 chars = 492 bytes, MTU-safe)
+                        CHUNK_SIZE = 4
                         
                         # Calcula número total de chunks necessários
                         total_chunks = (total_lines + CHUNK_SIZE - 1) // CHUNK_SIZE if total_lines > 0 else 1
@@ -226,7 +226,7 @@ def run():
                             data = json.load(f)
                         
                         lines = data.get('lines', [])
-                        CHUNK_SIZE = 5
+                        CHUNK_SIZE = 4
                         
                         # Calcula início e fim do chunk
                         start_idx = chunk_index * CHUNK_SIZE

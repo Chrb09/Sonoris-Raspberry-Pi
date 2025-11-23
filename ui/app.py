@@ -45,12 +45,44 @@ class TranscriberApp(App):
 
     def on_start(self):
         """Inicializa o aplicativo e configura callbacks do transcriber."""
+        # Buffer para armazenar o texto já enviado ao histórico
+        sent_to_history = {'text': ''}
+        
+        # Limite de caracteres por linha (mesmo do transcript_history.py)
+        MAX_LINE_CHARS = 40
+        
         # Atualiza o texto parcial
         def on_partial(p):
-            Clock.schedule_once(lambda dt, p=p: self.layout.set_partial(truncate_partial(p)))
+            nonlocal sent_to_history
+            
+            # Se o texto atual ultrapassar o limite, quebra e envia para o histórico
+            if len(p) > MAX_LINE_CHARS:
+                # Encontra o último espaço antes do limite para quebra mais natural
+                break_point = MAX_LINE_CHARS
+                last_space = p[:MAX_LINE_CHARS].rfind(' ')
+                if last_space > int(MAX_LINE_CHARS * 0.6):  # Se houver espaço em pelo menos 60% do limite
+                    break_point = last_space
+                
+                # Texto que vai para o histórico
+                line_to_save = p[:break_point].strip()
+                # Texto que continua no parcial
+                remaining_text = p[break_point:].strip()
+                
+                # Só adiciona ao histórico se for texto novo (não enviado antes)
+                if line_to_save and line_to_save != sent_to_history['text']:
+                    Clock.schedule_once(lambda dt, line=line_to_save: self.layout.add_final(line))
+                    sent_to_history['text'] = line_to_save
+                
+                # Mostra o texto restante no parcial
+                Clock.schedule_once(lambda dt, txt=remaining_text: self.layout.set_partial(txt))
+            else:
+                # Texto cabe no limite, mostra normalmente
+                Clock.schedule_once(lambda dt, p=p: self.layout.set_partial(p))
 
         # Adiciona linha finalizada no histórico
         def on_final(f):
+            # Reseta o buffer quando finaliza
+            sent_to_history['text'] = ''
             Clock.schedule_once(lambda dt, f=f: self.layout.add_final(f))
 
         # Mostra erro no terminal

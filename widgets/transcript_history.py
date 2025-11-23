@@ -22,6 +22,7 @@ MAX_PARTIAL_CHARS = 120  # máximo de caracteres do texto parcial
 PARTIAL_UPDATE_MIN_MS = 80  # intervalo mínimo entre atualizações do texto parcial (ms)
 HISTORY_MAX_LINES = 200  # máximo de linhas no histórico
 PARTIAL_RESET_MS = 3000  # tempo para resetar o texto parcial (ms)
+MAX_LINE_CHARS = 40  # máximo de caracteres por linha (4 linhas x 40 chars = 492 bytes, MTU-safe)
 TRANSCRIPTS_DIR = os.path.join(BASE_DIR, "..", "transcripts")  # diretório para salvar transcrições
 
 # Certifica que o diretório de transcrições existe
@@ -140,6 +141,29 @@ class TranscriptHistory(GridLayout):
     def add_line(self, text):
         print(f"\n[ADD_LINE] Recebido: '{text[:50]}...' | Modo Privado: {self.is_private_mode}")
         
+        # Quebra o texto em múltiplas linhas se ultrapassar o limite
+        # Isso garante que nada seja perdido e que cada linha caiba no chunk BLE
+        if len(text) > MAX_LINE_CHARS:
+            print(f"[ADD_LINE] ⚠️ Texto longo ({len(text)} chars) - quebrando em múltiplas linhas")
+            # Quebra o texto em pedaços de MAX_LINE_CHARS
+            text_parts = []
+            for i in range(0, len(text), MAX_LINE_CHARS):
+                text_parts.append(text[i:i + MAX_LINE_CHARS])
+            
+            # Adiciona cada parte como uma linha separada
+            for part in text_parts:
+                self._add_single_line(part)
+            
+            print(f"[ADD_LINE] ✓ Texto quebrado em {len(text_parts)} linha(s)")
+        else:
+            # Texto cabe em uma linha, adiciona normalmente
+            self._add_single_line(text)
+    
+    def _add_single_line(self, text):
+        """Adiciona uma única linha ao histórico (método interno)"""
+        # Importa valores atuais do módulo env (podem ter sido atualizados via BLE)
+        import env as env_module
+        
         # cria label com altura variável (size_hint_y=None) e permite quebra de linha via text_size
         lbl = Label(
             text=text,
@@ -147,10 +171,10 @@ class TranscriptHistory(GridLayout):
             halign='left',
             valign='middle',
             text_size=(self.width, None),
-            font_size=FONT_SIZE_HISTORY,
-            color=TEXT_COLOR,
-            font_name=FONT_NAME,
-            line_height=LINE_HEIGHT
+            font_size=env_module.FONT_SIZE_HISTORY,
+            color=env_module.TEXT_COLOR,
+            font_name=env_module.FONT_NAME,
+            line_height=env_module.LINE_HEIGHT
         )
 
         # quando a largura mudar, atualiza text_size para forçar rewrap do texto
@@ -174,7 +198,6 @@ class TranscriptHistory(GridLayout):
         
         # Salva a linha se não estiver em modo privado
         if not self.is_private_mode:
-            print(f"[ADD_LINE] Salvando linha (modo privado OFF)")
             timestamp = datetime.datetime.now().isoformat()
             self.saved_lines.append({
                 "text": text,
@@ -182,8 +205,6 @@ class TranscriptHistory(GridLayout):
             })
             # Tenta salvar a linha no arquivo JSON
             self._save_line_to_file(text, timestamp)
-        else:
-            print(f"[ADD_LINE] ⚠️ MODO PRIVADO ATIVO - não salvando")
 
     # limpa todo o histórico
     def clear_all(self):
