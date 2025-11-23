@@ -166,15 +166,10 @@ def run():
                             try:
                                 with open(file_path, 'r', encoding='utf-8') as f:
                                     data = json.load(f)
-                                    lines = data.get('lines', [])
-                                    
-                                    start_ts = lines[0]['timestamp'] if lines else data.get('created_at', '')
-                                    end_ts = lines[-1]['timestamp'] if len(lines) > 0 else data.get('created_at', '')
+                                    # Retorna apenas metadados mínimos para evitar MTU overflow
                                     conversations.append({
                                         'conversation_id': data.get('conversation_id', ''),
                                         'created_at': data.get('created_at', ''),
-                                        'start_ts': start_ts,
-                                        'end_ts': end_ts,
                                     })
                             except Exception as e:
                                 print(f"[MAIN] Erro ao ler {file_path}: {e}")
