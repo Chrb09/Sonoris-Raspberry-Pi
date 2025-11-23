@@ -45,15 +45,15 @@ class TranscriberApp(App):
 
     def on_start(self):
         """Inicializa o aplicativo e configura callbacks do transcriber."""
-        # Buffer para armazenar o texto já enviado ao histórico
-        sent_to_history = {'text': ''}
+        # Buffer para rastrear o texto já processado
+        processed_length = {'value': 0}
         
         # Limite de caracteres por linha (mesmo do transcript_history.py)
         MAX_LINE_CHARS = 40
         
         # Atualiza o texto parcial
         def on_partial(p):
-            nonlocal sent_to_history
+            nonlocal processed_length
             
             # Se o texto atual ultrapassar o limite, quebra e envia para o histórico
             if len(p) > MAX_LINE_CHARS:
@@ -68,21 +68,25 @@ class TranscriberApp(App):
                 # Texto que continua no parcial
                 remaining_text = p[break_point:].strip()
                 
-                # Só adiciona ao histórico se for texto novo (não enviado antes)
-                if line_to_save and line_to_save != sent_to_history['text']:
+                # Adiciona ao histórico
+                if line_to_save:
                     Clock.schedule_once(lambda dt, line=line_to_save: self.layout.add_final(line))
-                    sent_to_history['text'] = line_to_save
+                    # Atualiza o comprimento processado
+                    processed_length['value'] = len(p) - len(remaining_text)
                 
-                # Mostra o texto restante no parcial
-                Clock.schedule_once(lambda dt, txt=remaining_text: self.layout.set_partial(txt))
+                # Limpa completamente o parcial e mostra apenas o texto restante
+                def update_partial(dt):
+                    self.layout.set_partial('')  # Limpa completamente
+                    Clock.schedule_once(lambda dt2: self.layout.set_partial(remaining_text), 0.05)
+                Clock.schedule_once(update_partial, 0.01)
             else:
                 # Texto cabe no limite, mostra normalmente
                 Clock.schedule_once(lambda dt, p=p: self.layout.set_partial(p))
 
         # Adiciona linha finalizada no histórico
         def on_final(f):
-            # Reseta o buffer quando finaliza
-            sent_to_history['text'] = ''
+            # Reseta o contador quando finaliza
+            processed_length['value'] = 0
             Clock.schedule_once(lambda dt, f=f: self.layout.add_final(f))
 
         # Mostra erro no terminal
