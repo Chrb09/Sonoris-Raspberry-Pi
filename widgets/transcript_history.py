@@ -22,7 +22,7 @@ MAX_PARTIAL_CHARS = 120  # máximo de caracteres do texto parcial
 PARTIAL_UPDATE_MIN_MS = 80  # intervalo mínimo entre atualizações do texto parcial (ms)
 HISTORY_MAX_LINES = 200  # máximo de linhas no histórico
 PARTIAL_RESET_MS = 3000  # tempo para resetar o texto parcial (ms)
-MAX_LINE_CHARS = 40  # máximo de caracteres por linha (4 linhas x 40 chars = 492 bytes, MTU-safe)
+MAX_LINE_CHARS = 40  # limite para forçar quebra de linha (não trunca, apenas gatilho para nova linha)
 TRANSCRIPTS_DIR = os.path.join(BASE_DIR, "..", "transcripts")  # diretório para salvar transcrições
 
 # Certifica que o diretório de transcrições existe
@@ -140,11 +140,6 @@ class TranscriptHistory(GridLayout):
     # adiciona linha ao histórico, removendo a mais antiga se necessário
     def add_line(self, text):
         print(f"\n[ADD_LINE] Recebido: '{text[:50]}...' | Modo Privado: {self.is_private_mode}")
-        
-        # Limita o tamanho do texto para evitar overflow no envio BLE
-        if len(text) > MAX_LINE_CHARS:
-            text = text[:MAX_LINE_CHARS] + "..."
-            print(f"[ADD_LINE] ⚠️ Texto truncado para {MAX_LINE_CHARS} caracteres")
         
         # Importa valores atuais do módulo env (podem ter sido atualizados via BLE)
         import env as env_module

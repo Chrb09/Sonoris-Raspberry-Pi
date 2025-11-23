@@ -45,14 +45,14 @@ class TranscriberApp(App):
 
     def on_start(self):
         """Inicializa o aplicativo e configura callbacks do transcriber."""
-        # Limite de caracteres por linha (mesmo do transcript_history.py)
+        # Limite de caracteres por linha (força quebra para novo partial)
         MAX_LINE_CHARS = 40
         
         # Atualiza o texto parcial
         def on_partial(p):
             # Se o texto ultrapassar o limite, envia para o histórico e limpa o parcial
             if len(p) > MAX_LINE_CHARS:
-                # Envia linha completa para o histórico (será truncada lá)
+                # Envia linha completa para o histórico (sem truncar)
                 Clock.schedule_once(lambda dt, line=p: self.layout.add_final(line))
                 # Limpa o parcial
                 Clock.schedule_once(lambda dt: self.layout.set_partial(''), 0.01)
