@@ -141,26 +141,11 @@ class TranscriptHistory(GridLayout):
     def add_line(self, text):
         print(f"\n[ADD_LINE] Recebido: '{text[:50]}...' | Modo Privado: {self.is_private_mode}")
         
-        # Quebra o texto em múltiplas linhas se ultrapassar o limite
-        # Isso garante que nada seja perdido e que cada linha caiba no chunk BLE
+        # Limita o tamanho do texto para evitar overflow no envio BLE
         if len(text) > MAX_LINE_CHARS:
-            print(f"[ADD_LINE] ⚠️ Texto longo ({len(text)} chars) - quebrando em múltiplas linhas")
-            # Quebra o texto em pedaços de MAX_LINE_CHARS
-            text_parts = []
-            for i in range(0, len(text), MAX_LINE_CHARS):
-                text_parts.append(text[i:i + MAX_LINE_CHARS])
-            
-            # Adiciona cada parte como uma linha separada
-            for part in text_parts:
-                self._add_single_line(part)
-            
-            print(f"[ADD_LINE] ✓ Texto quebrado em {len(text_parts)} linha(s)")
-        else:
-            # Texto cabe em uma linha, adiciona normalmente
-            self._add_single_line(text)
-    
-    def _add_single_line(self, text):
-        """Adiciona uma única linha ao histórico (método interno)"""
+            text = text[:MAX_LINE_CHARS] + "..."
+            print(f"[ADD_LINE] ⚠️ Texto truncado para {MAX_LINE_CHARS} caracteres")
+        
         # Importa valores atuais do módulo env (podem ter sido atualizados via BLE)
         import env as env_module
         
@@ -198,6 +183,7 @@ class TranscriptHistory(GridLayout):
         
         # Salva a linha se não estiver em modo privado
         if not self.is_private_mode:
+            print(f"[ADD_LINE] Salvando linha (modo privado OFF)")
             timestamp = datetime.datetime.now().isoformat()
             self.saved_lines.append({
                 "text": text,
@@ -205,6 +191,8 @@ class TranscriptHistory(GridLayout):
             })
             # Tenta salvar a linha no arquivo JSON
             self._save_line_to_file(text, timestamp)
+        else:
+            print(f"[ADD_LINE] ⚠️ MODO PRIVADO ATIVO - não salvando")
 
     # limpa todo o histórico
     def clear_all(self):
