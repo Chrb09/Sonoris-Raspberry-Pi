@@ -184,15 +184,72 @@ def run():
                 return conversations
 
             def get_conversation_by_id(conv_id: str):
+                """Retorna conversa completa ou chunk específico dela."""
                 import json
                 try:
                     transcripts_dir = os.path.join(BASE_DIR, "transcripts")
                     file_path = os.path.join(transcripts_dir, f"{conv_id}.json")
                     if os.path.exists(file_path):
                         with open(file_path, 'r', encoding='utf-8') as f:
-                            return json.load(f)
+                            data = json.load(f)
+                        
+                        lines = data.get('lines', [])
+                        total_lines = len(lines)
+                        
+                        # Define tamanho do chunk (5 linhas por vez para ficar seguro)
+                        CHUNK_SIZE = 5
+                        
+                        # Calcula número total de chunks necessários
+                        total_chunks = (total_lines + CHUNK_SIZE - 1) // CHUNK_SIZE if total_lines > 0 else 1
+                        
+                        # Retorna metadados da conversa indicando que precisa ser baixada em chunks
+                        result = {
+                            'conversation_id': data.get('conversation_id', ''),
+                            'created_at': data.get('created_at', ''),
+                            'finalized': data.get('finalized', False),
+                            'total_lines': total_lines,
+                            'total_chunks': total_chunks,
+                            'chunk_size': CHUNK_SIZE,
+                            'requires_chunking': total_chunks > 1,
+                        }
+                        
+                        print(f"[MAIN] Conversa {conv_id}: {total_lines} linhas, {total_chunks} chunk(s)")
+                        return result
+                        
                 except Exception as e:
                     print(f"[MAIN] Erro ao carregar conversa {conv_id}: {e}")
+                return None
+            
+            def get_conversation_chunk(conv_id: str, chunk_index: int):
+                """Retorna um chunk específico de uma conversa."""
+                import json
+                try:
+                    transcripts_dir = os.path.join(BASE_DIR, "transcripts")
+                    file_path = os.path.join(transcripts_dir, f"{conv_id}.json")
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        
+                        lines = data.get('lines', [])
+                        CHUNK_SIZE = 5
+                        
+                        # Calcula início e fim do chunk
+                        start_idx = chunk_index * CHUNK_SIZE
+                        end_idx = min(start_idx + CHUNK_SIZE, len(lines))
+                        
+                        chunk_lines = lines[start_idx:end_idx]
+                        
+                        result = {
+                            'conversation_id': data.get('conversation_id', ''),
+                            'chunk_index': chunk_index,
+                            'lines': chunk_lines,
+                        }
+                        
+                        print(f"[MAIN] Enviando chunk {chunk_index} de {conv_id}: {len(chunk_lines)} linhas")
+                        return result
+                        
+                except Exception as e:
+                    print(f"[MAIN] Erro ao carregar chunk {chunk_index} de {conv_id}: {e}")
                 return None
 
             def delete_conversation(conv_id: str) -> bool:
@@ -287,6 +344,7 @@ def run():
                 set_device_name_cb=set_device_name,
                 get_conversations_cb=get_conversations,
                 get_conversation_by_id_cb=get_conversation_by_id,
+                get_conversation_chunk_cb=get_conversation_chunk,
                 delete_conversation_cb=delete_conversation,
                 set_settings_cb=set_settings,
             )

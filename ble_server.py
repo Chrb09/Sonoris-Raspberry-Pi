@@ -24,6 +24,7 @@ class ConnectService(Service):
         set_device_name_cb=None,
         get_conversations_cb=None,
         get_conversation_by_id_cb=None,
+        get_conversation_chunk_cb=None,
         delete_conversation_cb=None,
         set_settings_cb=None,
     ):
@@ -34,13 +35,15 @@ class ConnectService(Service):
         self.set_device_name_cb = set_device_name_cb
         self.get_conversations_cb = get_conversations_cb
         self.get_conversation_by_id_cb = get_conversation_by_id_cb
+        self.get_conversation_chunk_cb = get_conversation_chunk_cb
         self.delete_conversation_cb = delete_conversation_cb
         self.set_settings_cb = set_settings_cb
         self._device_info = {"device_name": "Sonoris Device", "total_active_time": 0, "total_conversations": 0}
 
         # Estado simples para comandos
-        self._last_cmd = "LIST"  # LIST | GET | DEL
+        self._last_cmd = "LIST"  # LIST | GET | DEL | CHUNK
         self._last_id = None
+        self._last_chunk_index = 0
         
         # Buffer para stream de transcrições
         self._transcription_buffer = b""
@@ -87,6 +90,19 @@ class ConnectService(Service):
         elif txt_upper.startswith("GET:"):
             self._last_cmd = "GET"
             self._last_id = txt.split(":", 1)[1].strip()
+        elif txt_upper.startswith("CHUNK:"):
+            # Formato: CHUNK:conversation_id:chunk_index
+            parts = txt.split(":", 2)
+            if len(parts) == 3:
+                self._last_cmd = "CHUNK"
+                self._last_id = parts[1].strip()
+                try:
+                    self._last_chunk_index = int(parts[2].strip())
+                except ValueError:
+                    self._last_chunk_index = 0
+                    print(f"[BLE] Índice de chunk inválido, usando 0")
+            else:
+                print(f"[BLE] Comando CHUNK mal formatado: {txt}")
         elif txt_upper.startswith("DEL:"):
             self._last_cmd = "DEL"
             self._last_id = txt.split(":", 1)[1].strip()
@@ -139,18 +155,31 @@ class ConnectService(Service):
                     conversations_data = self.get_conversations_cb() or []
                 conv_json = json.dumps(conversations_data)
                 return bytes(conv_json, 'utf-8')
-            # Modo GET: retorna conversa completa por id
+            # Modo GET: retorna metadados da conversa (não mais a conversa completa)
             elif self._last_cmd == "GET" and self._last_id:
-                full_conv = None
+                metadata = None
                 if callable(self.get_conversation_by_id_cb):
-                    full_conv = self.get_conversation_by_id_cb(self._last_id)
-                if full_conv is None:
-                    full_conv = {}
-                conv_json = json.dumps(full_conv)
+                    metadata = self.get_conversation_by_id_cb(self._last_id)
+                if metadata is None:
+                    metadata = {}
+                conv_json = json.dumps(metadata)
                 # após servir GET, volta para LIST por segurança
                 self._last_cmd = "LIST"
                 self._last_id = None
                 return bytes(conv_json, 'utf-8')
+            # Modo CHUNK: retorna chunk específico da conversa
+            elif self._last_cmd == "CHUNK" and self._last_id is not None:
+                chunk_data = None
+                if callable(self.get_conversation_chunk_cb):
+                    chunk_data = self.get_conversation_chunk_cb(self._last_id, self._last_chunk_index)
+                if chunk_data is None:
+                    chunk_data = {}
+                chunk_json = json.dumps(chunk_data)
+                # após servir CHUNK, volta para LIST
+                self._last_cmd = "LIST"
+                self._last_id = None
+                self._last_chunk_index = 0
+                return bytes(chunk_json, 'utf-8')
             else:
                 # fallback
                 return bytes("[]", 'utf-8')
@@ -183,6 +212,7 @@ async def _ble_main(
     set_device_name_cb=None,
     get_conversations_cb=None,
     get_conversation_by_id_cb=None,
+    get_conversation_chunk_cb=None,
     delete_conversation_cb=None,
     set_settings_cb=None,
     stop_event: threading.Event=None,
@@ -196,6 +226,7 @@ async def _ble_main(
         set_device_name_cb=set_device_name_cb,
         get_conversations_cb=get_conversations_cb,
         get_conversation_by_id_cb=get_conversation_by_id_cb,
+        get_conversation_chunk_cb=get_conversation_chunk_cb,
         delete_conversation_cb=delete_conversation_cb,
         set_settings_cb=set_settings_cb,
     )
@@ -240,6 +271,7 @@ def start_ble_server_in_thread(
     set_device_name_cb=None,
     get_conversations_cb=None,
     get_conversation_by_id_cb=None,
+    get_conversation_chunk_cb=None,
     delete_conversation_cb=None,
     set_settings_cb=None,
 ):
@@ -255,6 +287,7 @@ def start_ble_server_in_thread(
                 set_device_name_cb, 
                 get_conversations_cb,
                 get_conversation_by_id_cb,
+                get_conversation_chunk_cb,
                 delete_conversation_cb,
                 set_settings_cb,
                 stop_event,
