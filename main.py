@@ -128,7 +128,7 @@ def run():
                 return False
                 
             def get_conversations():
-                """Retorna lista RESUMIDA de conversas (id, created_at, start_ts, end_ts)."""
+                """Retorna lista RESUMIDA de conversas FINALIZADAS (id, created_at, start_ts, end_ts)."""
                 import json
                 conversations = []
                 try:
@@ -139,10 +139,27 @@ def run():
                             if file.endswith(".json"):
                                 file_path = os.path.join(transcripts_dir, file)
                                 try:
+                                    # Lê o arquivo para verificar flag 'finalized'
+                                    with open(file_path, 'r', encoding='utf-8') as f:
+                                        data = json.load(f)
+                                    
+                                    # Verifica se conversa está finalizada
+                                    is_finalized = data.get('finalized', False)
+                                    if not is_finalized:
+                                        conv_id = data.get('conversation_id', file)
+                                        print(f"[MAIN] Pulando conversa não finalizada: {conv_id}")
+                                        continue
+                                    
+                                    # Verifica se há linhas (conversa não vazia)
+                                    if not data.get('lines'):
+                                        print(f"[MAIN] Pulando conversa vazia: {data.get('conversation_id', 'unknown')}")
+                                        continue
+                                    
                                     mtime = os.path.getmtime(file_path)
                                     files_with_time.append((file_path, mtime))
                                 except Exception as e:
-                                    print(f"[MAIN] Erro ao obter mtime de {file}: {e}")
+                                    print(f"[MAIN] Erro ao processar {file}: {e}")
+                        
                         # ordena mais recentes primeiro e limita a 5
                         files_with_time.sort(key=lambda x: x[1], reverse=True)
                         for file_path, _ in files_with_time[:5]:
@@ -150,6 +167,7 @@ def run():
                                 with open(file_path, 'r', encoding='utf-8') as f:
                                     data = json.load(f)
                                     lines = data.get('lines', [])
+                                    
                                     start_ts = lines[0]['timestamp'] if lines else data.get('created_at', '')
                                     end_ts = lines[-1]['timestamp'] if len(lines) > 0 else data.get('created_at', '')
                                     conversations.append({
@@ -162,7 +180,7 @@ def run():
                                 print(f"[MAIN] Erro ao ler {file_path}: {e}")
                 except Exception as e:
                     print(f"[MAIN] Erro ao listar conversas: {e}")
-                print(f"[MAIN] get_conversations retornando {len(conversations)} conversação(ões) (resumo)")
+                print(f"[MAIN] get_conversations retornando {len(conversations)} conversação(ões) FINALIZADAS")
                 return conversations
 
             def get_conversation_by_id(conv_id: str):

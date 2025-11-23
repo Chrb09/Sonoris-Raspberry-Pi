@@ -52,6 +52,10 @@ class TranscriptHistory(GridLayout):
         self.is_private_mode = False
         self.saved_lines = []
         self.conversation_id = self._generate_conversation_id()
+        self.conversation_finalized = False  # Flag para indicar se conversa foi finalizada
+        
+        # Marca conversas antigas (de sessões anteriores) como finalizadas
+        self._finalize_old_conversations()
         
         # Incrementa o contador de conversas ao iniciar
         self.device_info.increment_conversation_counter()
@@ -62,14 +66,69 @@ class TranscriptHistory(GridLayout):
         data_hora = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         return f"Conversa_{data_hora}"
     
+    def _finalize_old_conversations(self):
+        """
+        Marca todas as conversas existentes como finalizadas ao iniciar o programa.
+        Isso garante que conversas interrompidas (quando programa foi fechado) sejam enviadas.
+        """
+        try:
+            if not os.path.exists(TRANSCRIPTS_DIR):
+                return
+            
+            print(f"[FINALIZE_OLD] Verificando conversas antigas...")
+            finalized_count = 0
+            
+            for file in os.listdir(TRANSCRIPTS_DIR):
+                if file.endswith(".json"):
+                    file_path = os.path.join(TRANSCRIPTS_DIR, file)
+                    try:
+                        # Lê o arquivo
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        
+                        # Verifica se tem linhas (conversa não vazia)
+                        if data.get('lines'):
+                            # Adiciona flag de finalizada se não existir
+                            if 'finalized' not in data or not data['finalized']:
+                                data['finalized'] = True
+                                
+                                # Salva o arquivo atualizado
+                                with open(file_path, 'w', encoding='utf-8') as f:
+                                    json.dump(data, f, ensure_ascii=False, indent=2)
+                                
+                                finalized_count += 1
+                                print(f"[FINALIZE_OLD] ✓ Marcada como finalizada: {data.get('conversation_id', file)}")
+                        else:
+                            # Remove conversas vazias
+                            os.remove(file_path)
+                            print(f"[FINALIZE_OLD] 🗑️ Removida conversa vazia: {file}")
+                    
+                    except Exception as e:
+                        print(f"[FINALIZE_OLD] ⚠️ Erro ao processar {file}: {e}")
+            
+            if finalized_count > 0:
+                print(f"[FINALIZE_OLD] ✅ {finalized_count} conversa(s) antiga(s) marcada(s) como finalizada(s)")
+            else:
+                print(f"[FINALIZE_OLD] ℹ️ Nenhuma conversa antiga para finalizar")
+        
+        except Exception as e:
+            print(f"[FINALIZE_OLD] ❌ Erro ao finalizar conversas antigas: {e}")
+    
     def start_new_conversation(self):
         """Inicia uma nova conversa"""
+        # Marca conversa atual como finalizada (pronta para envio quando app requisitar)
+        self.conversation_finalized = True
+        print(f"[START_NEW_CONV] Conversa '{self.conversation_id}' marcada como finalizada")
+        
         # Salva a conversa atual se tiver linhas
         self._save_current_conversation()
+        
         # Gera um novo ID para a nova conversa
         self.conversation_id = self._generate_conversation_id()
         # Limpa as linhas salvas para a nova conversa
         self.saved_lines = []
+        # Reseta flag de finalização para nova conversa
+        self.conversation_finalized = False
         # Incrementa o contador de conversas
         self.device_info.increment_conversation_counter()
     
@@ -130,9 +189,9 @@ class TranscriptHistory(GridLayout):
 
     # limpa todo o histórico
     def clear_all(self):
-        # Envia a conversa atual via BLE antes de limpar
-        print(f"[CLEAR_ALL] 📤 Enviando conversa via BLE antes de limpar...")
-        self._send_conversation_via_ble()
+        # Marca conversa atual como finalizada (pronta para envio quando app requisitar)
+        self.conversation_finalized = True
+        print(f"[CLEAR_ALL] Conversa '{self.conversation_id}' marcada como finalizada")
         
         # Salva a conversa atual antes de limpar
         self._save_current_conversation()
@@ -173,6 +232,7 @@ class TranscriptHistory(GridLayout):
                 data = {
                     "conversation_id": self.conversation_id,
                     "created_at": datetime.datetime.now().isoformat(),
+                    "finalized": False,  # Conversa em andamento
                     "lines": []
                 }
             
@@ -199,47 +259,8 @@ class TranscriptHistory(GridLayout):
             print(f"[SAVE_LINE] Traceback completo:")
             traceback.print_exc()
     
-    def _send_conversation_via_ble(self):
-        """Envia os dados da conversa via BLE para o app"""
-        try:
-            if self.ble_service_ref is None or self.ble_service_ref.get('instance') is None:
-                print(f"[BLE_SEND] ⚠️ BLE service não disponível - pulando envio")
-                return
-            
-            if self.is_private_mode:
-                print(f"[BLE_SEND] ⚠️ Modo privado ativo - não enviando")
-                return
-            
-            # Carrega conversa completa do arquivo ao invés de usar saved_lines
-            conversation_file = os.path.join(TRANSCRIPTS_DIR, f"{self.conversation_id}.json")
-            
-            if not os.path.exists(conversation_file):
-                print(f"[BLE_SEND] ⚠️ Arquivo de conversa não existe ainda: {conversation_file}")
-                return
-            
-            # Carrega os dados do arquivo
-            with open(conversation_file, 'r', encoding='utf-8') as f:
-                conversation_data = json.load(f)
-            
-            # Verifica se há linhas para enviar
-            if not conversation_data.get('lines'):
-                print(f"[BLE_SEND] ⚠️ Conversa sem linhas - não enviando")
-                return
-            
-            # Converte os dados para JSON
-            json_data = json.dumps(conversation_data, ensure_ascii=False)
-            print(f"[BLE_SEND] 📤 Enviando {len(json_data)} chars via BLE...")
-            print(f"[BLE_SEND] Preview: {json_data[:100]}...")
-            
-            # Envia via BLE service
-            ble_service = self.ble_service_ref['instance']
-            ble_service.send_transcription_data(json_data)
-            
-            print(f"[BLE_SEND] ✓ Dados enviados com sucesso!")
-        except Exception as e:
-            print(f"[BLE_SEND] ❌ Erro ao enviar via BLE: {e}")
-            import traceback
-            traceback.print_exc()
+    # REMOVIDO: _send_conversation_via_ble
+    # Conversas agora são enviadas apenas quando o app requisita via get_conversations_cb
     
     def _save_current_conversation(self):
         """Salva todas as linhas da conversa atual em um arquivo"""
@@ -252,11 +273,17 @@ class TranscriptHistory(GridLayout):
             data = {
                 "conversation_id": self.conversation_id,
                 "created_at": datetime.datetime.now().isoformat(),
+                "finalized": self.conversation_finalized,  # Usa a flag da instância
                 "lines": self.saved_lines
             }
             
             with open(conversation_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            if self.conversation_finalized:
+                print(f"[SAVE_CONV] ✅ Conversa '{self.conversation_id}' salva como FINALIZADA")
+            else:
+                print(f"[SAVE_CONV] 💾 Conversa '{self.conversation_id}' salva (ainda em andamento)")
                 
         except Exception as e:
             print(f"Erro ao salvar conversa: {e}")
