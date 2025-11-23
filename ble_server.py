@@ -168,10 +168,11 @@ class ConnectService(Service):
     def send_transcription_data(self, json_data: str):
         """Envia dados de transcrição via notify. Chamado externamente."""
         try:
-            print(f"[BLE] 📤 Enviando transcrição: {json_data[:100]}...")
+            print(f"[BLE] 📤 Preparando envio de conversa...")
             self._transcription_buffer = bytes(json_data, 'utf-8')
-            # Trigger notify (precisa ser implementado quando integrado)
-            # Por enquanto, o buffer será lido quando o app fizer read
+            print(f"[BLE] ✓ Conversa preparada no buffer ({len(self._transcription_buffer)} bytes)")
+            # NOTA: O notify será disparado automaticamente quando o app fizer read
+            # ou quando o characteristic state mudar (depende da implementação do bluez_peripheral)
         except Exception as e:
             print(f"[BLE] ❌ Erro ao preparar transcrição para envio: {e}")
 

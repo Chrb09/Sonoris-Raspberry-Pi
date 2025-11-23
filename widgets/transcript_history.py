@@ -130,6 +130,10 @@ class TranscriptHistory(GridLayout):
 
     # limpa todo o histórico
     def clear_all(self):
+        # Envia a conversa atual via BLE antes de limpar
+        print(f"[CLEAR_ALL] 📤 Enviando conversa via BLE antes de limpar...")
+        self._send_conversation_via_ble()
+        
         # Salva a conversa atual antes de limpar
         self._save_current_conversation()
         
@@ -186,8 +190,8 @@ class TranscriptHistory(GridLayout):
             print(f"[SAVE_LINE] ✓ SUCESSO - Arquivo salvo!")
             print(f"[SAVE_LINE] Tamanho do arquivo: {os.path.getsize(conversation_file)} bytes\n")
             
-            # Envia a conversa completa via BLE
-            self._send_conversation_via_ble()
+            # NÃO envia via BLE aqui - apenas salva localmente
+            # O envio será feito apenas quando a conversa for finalizada
                 
         except Exception as e:
             print(f"[SAVE_LINE] ✗ ERRO ao salvar transcrição: {e}")
@@ -202,12 +206,25 @@ class TranscriptHistory(GridLayout):
                 print(f"[BLE_SEND] ⚠️ BLE service não disponível - pulando envio")
                 return
             
-            # Monta os dados da conversa completa
-            conversation_data = {
-                "conversation_id": self.conversation_id,
-                "created_at": datetime.datetime.now().isoformat(),
-                "lines": self.saved_lines
-            }
+            if self.is_private_mode:
+                print(f"[BLE_SEND] ⚠️ Modo privado ativo - não enviando")
+                return
+            
+            # Carrega conversa completa do arquivo ao invés de usar saved_lines
+            conversation_file = os.path.join(TRANSCRIPTS_DIR, f"{self.conversation_id}.json")
+            
+            if not os.path.exists(conversation_file):
+                print(f"[BLE_SEND] ⚠️ Arquivo de conversa não existe ainda: {conversation_file}")
+                return
+            
+            # Carrega os dados do arquivo
+            with open(conversation_file, 'r', encoding='utf-8') as f:
+                conversation_data = json.load(f)
+            
+            # Verifica se há linhas para enviar
+            if not conversation_data.get('lines'):
+                print(f"[BLE_SEND] ⚠️ Conversa sem linhas - não enviando")
+                return
             
             # Converte os dados para JSON
             json_data = json.dumps(conversation_data, ensure_ascii=False)
