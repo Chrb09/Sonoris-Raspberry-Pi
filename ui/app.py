@@ -45,48 +45,29 @@ class TranscriberApp(App):
 
     def on_start(self):
         """Inicializa o aplicativo e configura callbacks do transcriber."""
-        # Buffer para rastrear o texto já processado
-        processed_length = {'value': 0}
-        
         # Limite de caracteres por linha (mesmo do transcript_history.py)
         MAX_LINE_CHARS = 40
         
         # Atualiza o texto parcial
         def on_partial(p):
-            nonlocal processed_length
-            
-            # Se o texto atual ultrapassar o limite, quebra e envia para o histórico
+            # Se o texto ultrapassar o limite, envia para o histórico e limpa o parcial
             if len(p) > MAX_LINE_CHARS:
-                # Encontra o último espaço antes do limite para quebra mais natural
-                break_point = MAX_LINE_CHARS
-                last_space = p[:MAX_LINE_CHARS].rfind(' ')
-                if last_space > int(MAX_LINE_CHARS * 0.6):  # Se houver espaço em pelo menos 60% do limite
-                    break_point = last_space
-                
-                # Texto que vai para o histórico
-                line_to_save = p[:break_point].strip()
-                # Texto que continua no parcial
-                remaining_text = p[break_point:].strip()
-                
-                # Adiciona ao histórico
-                if line_to_save:
-                    Clock.schedule_once(lambda dt, line=line_to_save: self.layout.add_final(line))
-                    # Atualiza o comprimento processado
-                    processed_length['value'] = len(p) - len(remaining_text)
-                
-                # Limpa completamente o parcial e mostra apenas o texto restante
-                def update_partial(dt):
-                    self.layout.set_partial('')  # Limpa completamente
-                    Clock.schedule_once(lambda dt2: self.layout.set_partial(remaining_text), 0.05)
-                Clock.schedule_once(update_partial, 0.01)
+                # Envia linha completa para o histórico (será truncada lá)
+                Clock.schedule_once(lambda dt, line=p: self.layout.add_final(line))
+                # Limpa o parcial
+                Clock.schedule_once(lambda dt: self.layout.set_partial(''), 0.01)
+                # Força o recognizer a resetar para começar novo texto
+                if hasattr(self.transcriber, 'streaming_recognizer'):
+                    try:
+                        self.transcriber.streaming_recognizer.Reset()
+                    except:
+                        pass
             else:
                 # Texto cabe no limite, mostra normalmente
                 Clock.schedule_once(lambda dt, p=p: self.layout.set_partial(p))
 
         # Adiciona linha finalizada no histórico
         def on_final(f):
-            # Reseta o contador quando finaliza
-            processed_length['value'] = 0
             Clock.schedule_once(lambda dt, f=f: self.layout.add_final(f))
 
         # Mostra erro no terminal
