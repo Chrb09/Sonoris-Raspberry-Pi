@@ -99,3 +99,7 @@ class TranscriberApp(App):
                 self.layout.history.device_info.update_active_time()
         except Exception as e:
             print(f"Erro ao atualizar tempo ativo: {e}")
+        
+        # Encerra o processo completamente ao fechar a janela
+        print("[TRANSCRIBER_APP] Janela fechada, encerrando processo...")
+        os._exit(0)
