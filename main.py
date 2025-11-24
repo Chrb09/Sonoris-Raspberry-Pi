@@ -194,11 +194,17 @@ def run():
             if BLE_AVAILABLE:
                 # Callbacks para o BLE
                 def get_device_info():
+                    print(f"[MAIN] 📞 get_device_info callback chamado")
+                    print(f"[MAIN] transcript_history_ref: {transcript_history_ref.get('instance')}")
                     if transcript_history_ref['instance'] is not None:
-                        return transcript_history_ref['instance'].get_device_info_for_bluetooth()
+                        info = transcript_history_ref['instance'].get_device_info_for_bluetooth()
+                        print(f"[MAIN] ✅ Device info obtido: {info}")
+                        return info
+                    print(f"[MAIN] ⚠️ transcript_history_ref['instance'] é None")
                     return None
                     
                 def set_device_name(name):
+                    print(f"[MAIN] 📞 set_device_name callback chamado com: {name}")
                     if transcript_history_ref['instance'] is not None:
                         return transcript_history_ref['instance'].update_device_name(name)
                     return False

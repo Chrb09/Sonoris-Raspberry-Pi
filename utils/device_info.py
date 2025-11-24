@@ -106,3 +106,16 @@ class DeviceInfo:
             'total_active_time': self.total_active_time,
             'total_conversations': self.total_conversations
         }
+    
+    def update_device_name(self, name):
+        """Atualiza o nome do dispositivo via Bluetooth."""
+        try:
+            if name and isinstance(name, str):
+                self._device_name = name
+                self._save_data()
+                print(f"[DEVICE_INFO] ✅ Nome atualizado para: {name}")
+                return True
+            return False
+        except Exception as e:
+            print(f"[DEVICE_INFO] ❌ Erro ao atualizar nome: {e}")
+            return False

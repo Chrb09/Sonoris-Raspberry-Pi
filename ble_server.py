@@ -122,10 +122,16 @@ class ConnectService(Service):
     @characteristic(DEVICE_INFO_UUID, CharFlags.READ | CharFlags.NOTIFY)
     def device_info(self, options):
         # Obtém informações atualizadas do dispositivo se disponível
+        print(f"[BLE] 📥 READ recebido para device_info")
         if callable(self.device_info_cb):
             info = self.device_info_cb()
             if info:
                 self._device_info = info
+                print(f"[BLE] ✅ Device info atualizado via callback: {info}")
+            else:
+                print(f"[BLE] ⚠️ Callback retornou None, usando dados em cache")
+        else:
+            print(f"[BLE] ⚠️ device_info_cb não é callable")
         
         # Converte para JSON e depois para bytes
         try:
@@ -133,7 +139,9 @@ class ConnectService(Service):
             print(f"[BLE] 📤 Enviando device info: {info_json}")
             return bytes(info_json, 'utf-8')
         except Exception as e:
-            print(f"[BLE] Erro ao enviar info do dispositivo: {e}")
+            print(f"[BLE] ❌ Erro ao enviar info do dispositivo: {e}")
+            import traceback
+            traceback.print_exc()
             return bytes("{}", 'utf-8')
     
     @characteristic(DEVICE_NAME_UUID, CharFlags.WRITE | CharFlags.WRITE_WITHOUT_RESPONSE)
