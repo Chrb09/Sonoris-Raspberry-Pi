@@ -76,10 +76,8 @@ class ConnectService(Service):
             try:
                 payload = txt.split(":", 1)[1]
                 settings = json.loads(payload)
-                print(f"[BLE] Settings recebidos: {settings}")
                 if callable(self.set_settings_cb):
                     self.set_settings_cb(settings)
-                    print(f"[BLE] Settings aplicados com sucesso!")
                 else:
                     print(f"[BLE] Aviso: set_settings_cb não definido")
             except Exception as e:
@@ -90,7 +88,6 @@ class ConnectService(Service):
         elif txt_upper.startswith("GET:"):
             self._last_cmd = "GET"
             self._last_id = txt.split(":", 1)[1].strip()
-            print(f"[BLE] 📥 Comando GET recebido para: {self._last_id}")
         elif txt_upper.startswith("CHUNK:"):
             # Formato: CHUNK:conversation_id:chunk_index
             parts = txt.split(":", 2)
@@ -99,12 +96,11 @@ class ConnectService(Service):
                 self._last_id = parts[1].strip()
                 try:
                     self._last_chunk_index = int(parts[2].strip())
-                    print(f"[BLE] 📥 Comando CHUNK recebido: id={self._last_id}, chunk={self._last_chunk_index}")
                 except ValueError:
                     self._last_chunk_index = 0
-                    print(f"[BLE] ⚠️ Índice de chunk inválido, usando 0")
+                    print(f"[BLE] Índice de chunk inválido, usando 0")
             else:
-                print(f"[BLE] ❌ Comando CHUNK mal formatado: {txt}")
+                print(f"[BLE] Comando CHUNK mal formatado: {txt}")
         elif txt_upper.startswith("DEL:"):
             self._last_cmd = "DEL"
             self._last_id = txt.split(":", 1)[1].strip()
@@ -112,7 +108,6 @@ class ConnectService(Service):
             if self._last_id and callable(self.delete_conversation_cb):
                 try:
                     ok = self.delete_conversation_cb(self._last_id)
-                    print(f"[BLE] Delete conversa '{self._last_id}': {ok}")
                 except Exception as e:
                     print(f"[BLE] Erro ao deletar conversa '{self._last_id}': {e}")
             # após deletar, volta para LIST
@@ -122,24 +117,21 @@ class ConnectService(Service):
     @characteristic(DEVICE_INFO_UUID, CharFlags.READ | CharFlags.NOTIFY)
     def device_info(self, options):
         # Obtém informações atualizadas do dispositivo se disponível
-        print(f"[BLE] 📥 READ recebido para device_info")
         if callable(self.device_info_cb):
             info = self.device_info_cb()
             if info:
                 self._device_info = info
-                print(f"[BLE] ✅ Device info atualizado via callback: {info}")
             else:
-                print(f"[BLE] ⚠️ Callback retornou None, usando dados em cache")
+                print(f"[BLE] Callback retornou None, usando dados em cache")
         else:
-            print(f"[BLE] ⚠️ device_info_cb não é callable")
+            print(f"[BLE] device_info_cb não é callable")
         
         # Converte para JSON e depois para bytes
         try:
             info_json = json.dumps(self._device_info)
-            print(f"[BLE] 📤 Enviando device info: {info_json}")
             return bytes(info_json, 'utf-8')
         except Exception as e:
-            print(f"[BLE] ❌ Erro ao enviar info do dispositivo: {e}")
+            print(f"[BLE] Erro ao enviar info do dispositivo: {e}")
             import traceback
             traceback.print_exc()
             return bytes("{}", 'utf-8')
@@ -161,15 +153,13 @@ class ConnectService(Service):
     @characteristic(CONVERSATIONS_UUID, CharFlags.READ | CharFlags.NOTIFY)
     def conversations(self, options):
         try:
-            print(f"[BLE] 📖 READ conversations - Estado: cmd={self._last_cmd}, id={self._last_id}, chunk={self._last_chunk_index}")
-            
+
             # Modo LIST: retorna lista pequena de conversas (metadados ou poucas conversas)
             if self._last_cmd == "LIST":
                 conversations_data = []
                 if callable(self.get_conversations_cb):
                     conversations_data = self.get_conversations_cb() or []
                 conv_json = json.dumps(conversations_data)
-                print(f"[BLE] 📤 Enviando LIST: {len(conversations_data)} conversas ({len(conv_json)} bytes)")
                 return bytes(conv_json, 'utf-8')
             
             # Modo GET: retorna metadados da conversa (não mais a conversa completa)
@@ -180,7 +170,6 @@ class ConnectService(Service):
                 if metadata is None:
                     metadata = {}
                 conv_json = json.dumps(metadata)
-                print(f"[BLE] 📤 Enviando GET metadados de '{self._last_id}': {len(conv_json)} bytes")
                 # após servir GET, volta para LIST por segurança
                 self._last_cmd = "LIST"
                 self._last_id = None
@@ -194,7 +183,6 @@ class ConnectService(Service):
                 if chunk_data is None:
                     chunk_data = {}
                 chunk_json = json.dumps(chunk_data)
-                print(f"[BLE] 📤 Enviando CHUNK {self._last_chunk_index} de '{self._last_id}': {len(chunk_json)} bytes")
                 # após servir CHUNK, volta para LIST
                 self._last_cmd = "LIST"
                 self._last_id = None
@@ -202,10 +190,10 @@ class ConnectService(Service):
                 return bytes(chunk_json, 'utf-8')
             else:
                 # fallback
-                print(f"[BLE] ⚠️ Estado inválido no READ - retornando []")
+                print(f"[BLE] Estado inválido no READ - retornando []")
                 return bytes("[]", 'utf-8')
         except Exception as e:
-            print(f"[BLE] ❌ Erro ao enviar conversas: {e}")
+            print(f"[BLE] Erro ao enviar conversas: {e}")
             import traceback
             traceback.print_exc()
             return bytes("[]", 'utf-8')
@@ -220,13 +208,11 @@ class ConnectService(Service):
     def send_transcription_data(self, json_data: str):
         """Envia dados de transcrição via notify. Chamado externamente."""
         try:
-            print(f"[BLE] 📤 Preparando envio de conversa...")
             self._transcription_buffer = bytes(json_data, 'utf-8')
-            print(f"[BLE] ✓ Conversa preparada no buffer ({len(self._transcription_buffer)} bytes)")
             # NOTA: O notify será disparado automaticamente quando o app fizer read
             # ou quando o characteristic state mudar (depende da implementação do bluez_peripheral)
         except Exception as e:
-            print(f"[BLE] ❌ Erro ao preparar transcrição para envio: {e}")
+            print(f"[BLE] Erro ao preparar transcrição para envio: {e}")
 
 async def _ble_main(
     on_start_cb,

@@ -121,10 +121,9 @@ class WaitingApp(App):
 def apply_settings_to_ui(app, env_module):
     """Aplica as configurações de env nas widgets da UI existentes"""
     try:
-        print(f"[APPLY_UI] 🎨 Aplicando settings nos widgets...")
         
         if not hasattr(app, 'layout'):
-            print(f"[APPLY_UI] ⚠️ App sem layout ainda")
+            print(f"[APPLY_UI] App sem layout ainda")
             return
         
         layout = app.layout
@@ -139,7 +138,6 @@ def apply_settings_to_ui(app, env_module):
                 tm.partial_label.font_name = env_module.FONT_NAME
                 tm.partial_label.color = env_module.TEXT_COLOR
                 tm.partial_label.line_height = env_module.LINE_HEIGHT
-                print(f"[APPLY_UI]   ✓ Partial label atualizado")
             
             # Atualiza labels do histórico
             if hasattr(tm, 'history') and hasattr(tm.history, 'lines'):
@@ -148,16 +146,13 @@ def apply_settings_to_ui(app, env_module):
                     label.font_name = env_module.FONT_NAME
                     label.color = env_module.TEXT_COLOR
                     label.line_height = env_module.LINE_HEIGHT
-                print(f"[APPLY_UI]   ✓ {len(tm.history.lines)} labels do histórico atualizados")
         
         # Atualiza cor de fundo do layout principal
         if hasattr(layout, 'bg_color'):
             layout.bg_color.rgba = env_module.BACKGROUND_COLOR
-            print(f"[APPLY_UI]   ✓ Cor de fundo atualizada: {env_module.BACKGROUND_COLOR}")
         
-        print(f"[APPLY_UI] ✓ Settings aplicados com sucesso!")
     except Exception as e:
-        print(f"[APPLY_UI] ❌ Erro ao aplicar settings na UI: {e}")
+        print(f"[APPLY_UI] Erro ao aplicar settings na UI: {e}")
         traceback.print_exc()
 
 def run():
@@ -194,17 +189,12 @@ def run():
             if BLE_AVAILABLE:
                 # Callbacks para o BLE
                 def get_device_info():
-                    print(f"[MAIN] 📞 get_device_info callback chamado")
-                    print(f"[MAIN] transcript_history_ref: {transcript_history_ref.get('instance')}")
                     if transcript_history_ref['instance'] is not None:
                         info = transcript_history_ref['instance'].get_device_info_for_bluetooth()
-                        print(f"[MAIN] ✅ Device info obtido: {info}")
                         return info
-                    print(f"[MAIN] ⚠️ transcript_history_ref['instance'] é None")
                     return None
                     
                 def set_device_name(name):
-                    print(f"[MAIN] 📞 set_device_name callback chamado com: {name}")
                     if transcript_history_ref['instance'] is not None:
                         return transcript_history_ref['instance'].update_device_name(name)
                     return False
@@ -229,7 +219,6 @@ def run():
                                         is_finalized = data.get('finalized', False)
                                         if not is_finalized:
                                             conv_id = data.get('conversation_id', file)
-                                            print(f"[MAIN] Pulando conversa não finalizada: {conv_id}")
                                             continue
                                         
                                         # Verifica se há linhas (conversa não vazia)
@@ -257,7 +246,6 @@ def run():
                                     print(f"[MAIN] Erro ao ler {file_path}: {e}")
                     except Exception as e:
                         print(f"[MAIN] Erro ao listar conversas: {e}")
-                    print(f"[MAIN] get_conversations retornando {len(conversations)} conversação(ões) FINALIZADAS")
                     return conversations
 
                 def get_conversation_by_id(conv_id: str):
@@ -290,7 +278,6 @@ def run():
                                 'requires_chunking': total_chunks > 1,
                             }
                             
-                            print(f"[MAIN] Conversa {conv_id}: {total_lines} linhas, {total_chunks} chunk(s)")
                             return result
                             
                     except Exception as e:
@@ -321,8 +308,7 @@ def run():
                                 'chunk_index': chunk_index,
                                 'lines': chunk_lines,
                             }
-                            
-                            print(f"[MAIN] Enviando chunk {chunk_index} de {conv_id}: {len(chunk_lines)} linhas")
+                        
                             return result
                             
                     except Exception as e:
@@ -344,7 +330,6 @@ def run():
                 def set_settings(settings_dict):
                     """Callback que recebe configurações de legendas do app e aplica na UI"""
                     try:
-                        print(f"[MAIN] 🎨 Aplicando configurações de legendas: {settings_dict}")
                         
                         # Importa módulo env para modificar variáveis
                         import env
@@ -363,29 +348,24 @@ def run():
                         # Atualiza variáveis de configuração em memória
                         if 'textcolor' in settings_normalized:
                             env.TEXT_COLOR = hex_to_rgba(settings_normalized['textcolor'])
-                            print(f"[MAIN]   - TEXT_COLOR: {env.TEXT_COLOR}")
                         
                         if 'bgcolor' in settings_normalized:
                             env.BACKGROUND_COLOR = hex_to_rgba(settings_normalized['bgcolor'])
-                            print(f"[MAIN]   - BACKGROUND_COLOR: {env.BACKGROUND_COLOR}")
                         
                         if 'fontsize' in settings_normalized:
                             font_size = float(settings_normalized['fontsize'])
                             env.FONT_SIZE = font_size
                             env.FONT_SIZE_PARTIAL = font_size
                             env.FONT_SIZE_HISTORY = int(font_size * 0.65)
-                            print(f"[MAIN]   - FONT_SIZE: {env.FONT_SIZE} (history: {env.FONT_SIZE_HISTORY})")
                         
                         if 'fontweight' in settings_normalized:
                             weight = int(settings_normalized['fontweight'])
                             env.FONT_WEIGHT = weight
                             # Registra o novo peso se necessário
                             env.FONT_NAME = env.register_font_weight(weight)
-                            print(f"[MAIN]   - FONT_WEIGHT: {env.FONT_WEIGHT} -> {env.FONT_NAME}")
                         
                         if 'lineheight' in settings_normalized:
                             env.LINE_HEIGHT = float(settings_normalized['lineheight'])
-                            print(f"[MAIN]   - LINE_HEIGHT: {env.LINE_HEIGHT}")
                         
                         if 'fontfamily' in settings_normalized:
                             family = settings_normalized['fontfamily']
@@ -396,19 +376,17 @@ def run():
                                 from kivy.core.text import LabelBase
                                 env.FONT_NAME = family
                                 LabelBase.register(name=env.FONT_NAME, fn_regular=font_file)
-                                print(f"[MAIN]   - FONT_FAMILY: {family} -> {font_file}")
                             else:
                                 print(f"[MAIN]   - ⚠️ Fonte {family} não encontrada, mantendo atual")
                         
                         # Aplica as configurações na UI do Kivy se o app já estiver rodando
                         if app_ref['instance'] is not None:
                             Clock.schedule_once(lambda dt: apply_settings_to_ui(app_ref['instance'], env), 0.1)
-                            print(f"[MAIN] ✓ Configurações agendadas para aplicação na UI")
                         else:
-                            print(f"[MAIN] ℹ️ App não iniciado ainda - settings serão usados ao criar widgets")
+                            print(f"[MAIN] ℹApp não iniciado ainda - settings serão usados ao criar widgets")
                         
                     except Exception as e:
-                        print(f"[MAIN] ❌ Erro ao aplicar settings: {e}")
+                        print(f"[MAIN] Erro ao aplicar settings: {e}")
                         traceback.print_exc()
                 
                 # Inicia o servidor BLE com os callbacks
@@ -465,7 +443,6 @@ def run():
     def set_transcript_history_ref(dt):
         if hasattr(app, 'layout') and hasattr(app.layout, 'history'):
             transcript_history_ref['instance'] = app.layout.history
-            print("[MAIN] TranscriptHistory referenciado para uso com BLE")
     Clock.schedule_once(set_transcript_history_ref, 1)
     
     # Roda o TranscriberApp

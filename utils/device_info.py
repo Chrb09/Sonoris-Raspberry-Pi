@@ -113,9 +113,8 @@ class DeviceInfo:
             if name and isinstance(name, str):
                 self._device_name = name
                 self._save_data()
-                print(f"[DEVICE_INFO] ✅ Nome atualizado para: {name}")
                 return True
             return False
         except Exception as e:
-            print(f"[DEVICE_INFO] ❌ Erro ao atualizar nome: {e}")
+            print(f"[DEVICE_INFO] Erro ao atualizar nome: {e}")
             return False

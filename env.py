@@ -76,8 +76,6 @@ FONT_NAME = FONT_FAMILY
 font_file = get_font_file(FONT_FAMILY, FONT_WEIGHT)
 if font_file:
     LabelBase.register(name=FONT_NAME, fn_regular=font_file)
-    print(f"[ENV] Fonte '{FONT_FAMILY}' registrada com peso {FONT_WEIGHT} ({FONT_WEIGHT_MAP.get(FONT_WEIGHT, 'Regular')})")
-    print(f"[ENV] Arquivo: {os.path.basename(font_file)}")
 else:
     print(f"[ENV] Aviso: Arquivo de fonte não encontrado para '{FONT_FAMILY}' com peso {FONT_WEIGHT}")
 
@@ -111,7 +109,6 @@ def register_font_weight(weight):
     if font_file:
         LabelBase.register(name=font_name, fn_regular=font_file)
         _registered_weights.add(weight)
-        print(f"[ENV] Peso adicional registrado: {font_name} -> {os.path.basename(font_file)}")
         return font_name
     else:
         # Se não encontrar, usa o peso padrão já registrado
@@ -123,24 +120,3 @@ FONT_NAME_BOLD = register_font_weight(700)      # Para botões e títulos
 FONT_NAME_SEMIBOLD = register_font_weight(600)  # Para subtítulos
 FONT_NAME_MEDIUM = register_font_weight(500)    # Para texto de ênfase
 FONT_NAME_REGULAR = register_font_weight(400)   # Para texto normal (fallback)
-
-# ------------------------------
-# Testes de Configuração
-# ------------------------------
-
-print("\nTESTE DE CONFIGURAÇÕES DE UI \n------------------------------")
-
-print("DEBUG: TEXT_COLOR =", TEXT_COLOR, type(TEXT_COLOR))
-print("DEBUG: BACKGROUND_COLOR =", BACKGROUND_COLOR, type(BACKGROUND_COLOR))
-print("DEBUG: FONT_SIZE =", FONT_SIZE, type(FONT_SIZE))
-print("DEBUG: FONT_SIZE_PARTIAL =", FONT_SIZE_PARTIAL, type(FONT_SIZE_PARTIAL))
-print("DEBUG: FONT_SIZE_HISTORY =", FONT_SIZE_HISTORY, type(FONT_SIZE_HISTORY))
-print("DEBUG: FONT_FAMILY =", FONT_FAMILY, type(FONT_FAMILY))
-print("DEBUG: FONT_WEIGHT (padrão) =", FONT_WEIGHT, f"({FONT_WEIGHT_MAP.get(FONT_WEIGHT, 'Regular')})")
-print("DEBUG: LINE_HEIGHT =", LINE_HEIGHT, type(LINE_HEIGHT))
-print("DEBUG: FONT_NAME (padrão) =", FONT_NAME)
-print("DEBUG: FONT_NAME_BOLD =", FONT_NAME_BOLD)
-print("DEBUG: FONT_NAME_SEMIBOLD =", FONT_NAME_SEMIBOLD)
-print("DEBUG: FONT_NAME_REGULAR =", FONT_NAME_REGULAR)
-
-print("------------------------------\n")
