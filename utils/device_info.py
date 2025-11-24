@@ -22,7 +22,7 @@ class DeviceInfo:
         
         # Valores padrão
         self._device_name = "Sonoris Device"
-        self._total_active_time = 0  # Em minutos
+        self._total_active_time = 0  # Em segundos
         self._total_conversations = 0
         self._start_time = time.time()
         
@@ -76,14 +76,14 @@ class DeviceInfo:
     
     @property
     def total_active_time(self):
-        """Tempo total ativo em minutos."""
+        """Tempo total ativo em segundos."""
         # Atualiza o tempo com a sessão atual
-        current_session_time = (time.time() - self._start_time) / 60  # Converte para minutos
+        current_session_time = (time.time() - self._start_time)  # Em segundos
         return self._total_active_time + int(current_session_time)
     
     def update_active_time(self):
         """Atualiza o tempo ativo total."""
-        current_session_time = (time.time() - self._start_time) / 60  # Converte para minutos
+        current_session_time = (time.time() - self._start_time)  # Em segundos
         self._total_active_time += int(current_session_time)
         self._start_time = time.time()  # Reinicia o contador
         self._save_data()

@@ -123,11 +123,14 @@ class ConnectService(Service):
     def device_info(self, options):
         # Obtém informações atualizadas do dispositivo se disponível
         if callable(self.device_info_cb):
-            self._device_info = self.device_info_cb() or self._device_info
+            info = self.device_info_cb()
+            if info:
+                self._device_info = info
         
         # Converte para JSON e depois para bytes
         try:
             info_json = json.dumps(self._device_info)
+            print(f"[BLE] 📤 Enviando device info: {info_json}")
             return bytes(info_json, 'utf-8')
         except Exception as e:
             print(f"[BLE] Erro ao enviar info do dispositivo: {e}")
