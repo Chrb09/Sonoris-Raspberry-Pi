@@ -35,20 +35,12 @@ cfg = {
 
 # Eventos de sincronização entre threads
 ble_connected_event = threading.Event()
-ble_disconnected_event = threading.Event()
 ble_stop_event = None
 
 def on_ble_start():
     """Chamado pela thread BLE quando o app no celular escreveu "START"."""
     print("[MAIN] BLE START recebido")
     ble_connected_event.set()
-    ble_disconnected_event.clear()
-
-def on_ble_stop():
-    """Chamado pela thread BLE quando o app no celular escreveu "STOP"."""
-    print("[MAIN] BLE STOP recebido")
-    ble_disconnected_event.set()
-    ble_connected_event.clear()
 
 class WaitingApp(App):
     """Aplicativo Kivy que mostra tela de espera de conexão."""
@@ -416,7 +408,7 @@ def run():
                 # Inicia o servidor BLE com os callbacks
                 ble_stop_event, _, ble_service_ref = start_ble_server_in_thread(
                     on_start_cb=on_ble_start, 
-                    on_stop_cb=on_ble_stop,
+                    on_stop_cb=None,
                     device_info_cb=get_device_info,
                     set_device_name_cb=set_device_name,
                     get_conversations_cb=get_conversations,
@@ -469,19 +461,6 @@ def run():
             transcript_history_ref['instance'] = app.layout.history
             print("[MAIN] TranscriptHistory referenciado para uso com BLE")
     Clock.schedule_once(set_transcript_history_ref, 1)
-
-    # starta uma thread que vigia a desconexão e força o app a parar se necessário
-    def watcher():
-        # espera que ble_disconnected_event seja setado
-        ble_disconnected_event.wait()
-        print("[MAIN] watcher: BLE desconectado, parando app...")
-        try:
-            Clock.schedule_once(lambda dt: app.stop(), 0)
-        except Exception as e:
-            print("[MAIN] erro ao parar app:", e)
-
-    w = threading.Thread(target=watcher, daemon=True)
-    w.start()
     
     # Roda o TranscriberApp
     app.run()

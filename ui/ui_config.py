@@ -19,9 +19,13 @@ def init_window_settings():
     # Importamos Window apenas quando esta função é chamada
     from kivy.core.window import Window
     
-    Window.size = DEFAULT_WINDOW_SIZE
+    # Maximiza a janela
+    Window.maximize()
+    
+    # Ou use fullscreen se WINDOW_FULLSCREEN estiver ativo
     if WINDOW_FULLSCREEN:
         Window.fullscreen = 'auto'
+    
     Window.clearcolor = BACKGROUND_COLOR
 
 # Configurações de transcrição

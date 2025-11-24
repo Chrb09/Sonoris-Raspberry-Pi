@@ -224,6 +224,28 @@ class ToolbarManager:
 
         # Entrar em estado pausado
         print("pausado")
+        
+        # Envia o texto parcial atual para o histórico antes de pausar
+        try:
+            if hasattr(self.main_layout, 'transcription_manager'):
+                tm = self.main_layout.transcription_manager
+                if hasattr(tm, 'partial_label') and tm.partial_label.text:
+                    partial_text = tm.partial_label.text.strip()
+                    if partial_text:
+                        # Adiciona ao histórico
+                        self.main_layout.add_final(partial_text)
+                        # Limpa o partial
+                        self.main_layout.set_partial('')
+                        # Reseta o recognizer
+                        if hasattr(self.main_layout, "transcriber") and self.main_layout.transcriber:
+                            if hasattr(self.main_layout.transcriber, 'streaming_recognizer'):
+                                try:
+                                    self.main_layout.transcriber.streaming_recognizer.Reset()
+                                except:
+                                    pass
+        except Exception as e:
+            print(f"Erro ao enviar partial para histórico ao pausar: {e}")
+        
         try:
             if hasattr(self.main_layout, "transcriber") and self.main_layout.transcriber:
                 self.main_layout.transcriber.stop()
