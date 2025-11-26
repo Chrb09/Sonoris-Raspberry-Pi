@@ -4,71 +4,76 @@
 
 </div>
 
+<b>Sonoris</b> é um projeto, constituido por um aplicativo e um dispositivo, desenvolvido ao longo de 2025 em parceria com uma empresa, como parte do Trabalho de Conclusão de Curso (TCC) do curso de **Desenvolvimento de Sistemas AMS da Etec da Zona Leste**. **[Landing Page da Sonoris](https://sonoris.vercel.app/)**
+
 # Sumário
 
-- [Sumário](#sumário)
-  - [🌟 Sobre a Sonoris](#sobre-a-sonoris)
-  - [💻 Tecnologias Utilizada](#tecnologias-utilizadas)
-  - [🚀 Como rodar o projeto](#como-rodar-o-projeto)
-  - [❓ FAQ](#FAQ)
-  - [Contribuidores](#contribuidores)
+- [🌟 Sobre a Sonoris](#-sobre-a-sonoris)
+- [📖 Funcionalidades do dispositivo](#-funcionalidades-do-dispositivo)
+- [💻 Tecnologias Utilizadas](#-tecnologias-utilizadas)
+  - [Telas](#telas)
+  - [Transcrição](#transcrição)
+  - [Servidor BLE](#servidor-ble)
+- [🚀 Como rodar o projeto](#-como-rodar-o-projeto)
+- [📁 Outros repositórios](#-outros-repositórios)
+- [😀 Contribuidores](#-contribuidores)
 
 ## 🌟 Sobre a Sonoris
 
-<b>Sonoris</b> é um aplicativo e dispositivo inovador, desenvolvido ao longo de 2025 em parceria com uma empresa, como parte do Trabalho de Conclusão de Curso (TCC) do curso de **Desenvolvimento de Sistemas AMS da Etec da Zona Leste**.
+O projeto tem como propósito facilitar a comunicação e promover a inclusão de **pessoas com deficiência auditiva**, principalmente em contextos profissionais e acadêmicos, utilizando transcrição de voz e opções de customização.
 
-O projeto tem como propósito **facilitar a comunicação e promover a inclusão de pessoas surdas**, principalmente em contextos profissionais e acadêmicos.
+<div align=center>
+  
+![Logo](assets/dispositivo.png)
 
+</div>
 
-### Principais funcionalidades
-O projeto conta com um dispositivo IoT que capta a fala humana por meio de um microfone omnidirecional e realiza a transcrição em um microcomputador Raspberry Pi. As legendas geradas são exibidas em um display LCD e também enviadas ao aplicativo mobile via Bluetooth.
+## 📖 Funcionalidades do dispositivo
+
+O dispositivo IoT que capta a fala humana por meio de um microfone omnidirecional e realiza a transcrição em um microcomputador Raspberry Pi. As legendas geradas são exibidas em um display LCD e também enviadas ao aplicativo mobile via Bluetooth.
 
 Caso o usuário prefira, é possível ativar o modo privado, garantindo que as conversas captadas não sejam armazenadas no aplicativo.
 
-O aplicativo permite a criação e configuração de contas de usuário, além da personalização de categorias e respostas rápidas — que podem ser reproduzidas em áudio ao serem acionadas.
-
-Também é possível customizar as legendas do dispositivo, ajustando fonte, tamanho, espaçamento horizontal e outras preferências. Quando o modo privado está desativado, as conversas captadas são sincronizadas e armazenadas no aplicativo.
-
-### Todos os repositórios
-- <b> [Aplicativo](https://github.com/Beatriz02020/Sonoris-iot-app-transcricao) </b><br>
-- <b> [Dispositivo](https://github.com/Chrb09/Sonoris-RaspberryPi) </b><br>
-- <b> [Documentação](https://github.com/Beatriz02020/Sonoris-iot-app-transcricao/tree/documentation?tab=readme-ov-file) </b>
+Também é possível customizar as legendas do dispositivo, ajustando fonte, tamanho, espaçamento horizontal e outras preferências pelo aplicativo.
 
 ## 💻 Tecnologias utilizadas
-### Aplicativo
 
-![dart](https://img.shields.io/badge/dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
-![flutter](https://img.shields.io/badge/flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+### Telas:
 
-### Dispositivo
 ![python](https://img.shields.io/badge/python-0175C2?style=for-the-badge&logo=python&logoColor=white)
-![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-A22846?style=for-the-badge&logo=raspberrypi&logoColor=white)
-![Bluetooth](https://img.shields.io/badge/Bluetooth-0082FC?style=for-the-badge&logo=bluetooth&logoColor=white)
+![kivy](https://img.shields.io/badge/kivy-0175C2?style=for-the-badge&logo=python&logoColor=white)
 
+### Transcrição:
+
+![python](https://img.shields.io/badge/python-0175C2?style=for-the-badge&logo=python&logoColor=white)
+![vosk](https://img.shields.io/badge/vosk-0175C2?style=for-the-badge&logo=python&logoColor=white)
+![webrtcvad](https://img.shields.io/badge/webrtcvad-0175C2?style=for-the-badge&logo=python&logoColor=white)
+
+### Servidor BLE:
+
+![Bluetooth](https://img.shields.io/badge/Bluetooth_Low_Energy-0175C2?style=for-the-badge&logo=bluetooth&logoColor=white)
+![Bluetooth](https://img.shields.io/badge/bluez_peripheral-0175C2?style=for-the-badge&logo=bluetooth&logoColor=white)
 
 ## 🚀 Como rodar o projeto
-### Aplicativo
+
 ```sh
 # clone o repositório
-git clone https://github.com/Beatriz02020/Sonoris-app.git
+git clone https://github.com/Chrb09/Sonoris-Raspberry-Pi.git
 
 # acesse o diretório
-cd sonoris-app
-
-# instale as dependências
-flutter pub get
-
-# rode o aplicativo
-flutter run
+cd Sonoris-RaspberryPi
 ```
 
-### Dispositivo
-```sh
-# clone o repositório
-git clone https://github.com/Beatriz02020/Sonoris-device.git
+Baixe o [vosk-model-pt-fb-v0.1.1-20220516_2113](https://alphacephei.com/vosk/models/vosk-model-pt-fb-v0.1.1-20220516_2113.zip), extraia os conteúdos em uma pasta chamada 'modelLarge' na root do projeto.
 
-# acesse o diretório
-cd sonoris-device
+![Estrutura da pasta](assets/modelLarge.png)
+
+```python
+# crie o ambiente virtual
+python -m venv meu_ambiente_virtual
+
+# ative o ambiente virtual
+source meu_ambiente_virtual/bin/activate
 
 # instale as dependências
 pip install -r requirements.txt
@@ -77,10 +82,11 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## ❓ FAQ
-### **O design do projeto foi criado com qual ferramenta?**
-O design da Sonoris foi elaborado utilizando a ferramenta de design [ **Figma**](www.figma.com/design/gNida4bnTd89phUpLydH89/Figma-Oficial-Sonoris?node-id=0-1&p=f&t=ruMUI67KIcO3A3is-0).
+## 📁 Outros repositórios
 
+- <b> [Aplicativo](https://github.com/Beatriz02020/Sonoris-iot-app-transcricao) </b><br>
+- <b> [Landing Page](https://github.com/Amanda093/Sonoris) </b><br>
+- <b> [Documentação](https://github.com/Beatriz02020/Sonoris-iot-app-transcricao/tree/documentation) </b>
 
 ## 😀 Contribuidores
 
@@ -116,5 +122,3 @@ O design da Sonoris foi elaborado utilizando a ferramenta de design [ **Figma**]
 </table>
 </div>
 <br>
-
-> Feito com ❤️ usando Flutter e Python.

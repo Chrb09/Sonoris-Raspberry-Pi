@@ -3,3 +3,4 @@ vosk
 sounddevice
 webrtcvad
 kivy
+bluez_peripheral
