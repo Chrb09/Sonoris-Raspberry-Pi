@@ -11,7 +11,7 @@ from ui.ui_config import init_window_settings, UI_TEXTS, ICON_PATHS
 
 # Variável de teste: definir True para pular a conexão BLE e iniciar direto a UI/transcriber.
 # Mude para False em produção.
-SKIP_BLE = True 
+SKIP_BLE = False 
 
 # tenta importar o BLE server (pode falhar em ambientes sem BLE)
 try:

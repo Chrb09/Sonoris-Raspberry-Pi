@@ -2,6 +2,7 @@ import asyncio
 import threading
 import time
 import json
+from concurrent.futures import ThreadPoolExecutor
 from bluez_peripheral.gatt.service import Service
 from bluez_peripheral.gatt.characteristic import characteristic, CharacteristicFlags as CharFlags
 from bluez_peripheral.gatt.descriptor import descriptor, DescriptorFlags as DescFlags
@@ -47,6 +48,16 @@ class ConnectService(Service):
         
         # Buffer para stream de transcrições
         self._transcription_buffer = b""
+        self._response_lock = threading.Lock()
+        self._pending_response = b"[]"
+        self._active_mode = "LIST"
+        self._next_mode_after_consume = None
+        self._executor = ThreadPoolExecutor(max_workers=1)
+        try:
+            self._pending_response = self._build_response_sync("LIST")
+        except Exception:
+            pass
+        self._queue_response("LIST")
 
     @characteristic(CHAR_UUID, CharFlags.WRITE | CharFlags.WRITE_WITHOUT_RESPONSE)
     def connect(self, options):
@@ -85,9 +96,12 @@ class ConnectService(Service):
         elif txt_upper.startswith("LIST"):
             self._last_cmd = "LIST"
             self._last_id = None
+            self._queue_response("LIST")
         elif txt_upper.startswith("GET:"):
             self._last_cmd = "GET"
             self._last_id = txt.split(":", 1)[1].strip()
+            if self._last_id:
+                self._queue_response("GET", conversation_id=self._last_id)
         elif txt_upper.startswith("CHUNK:"):
             # Formato: CHUNK:conversation_id:chunk_index
             parts = txt.split(":", 2)
@@ -99,6 +113,8 @@ class ConnectService(Service):
                 except ValueError:
                     self._last_chunk_index = 0
                     print(f"[BLE] Índice de chunk inválido, usando 0")
+                if self._last_id:
+                    self._queue_response("CHUNK", conversation_id=self._last_id, chunk_index=self._last_chunk_index)
             else:
                 print(f"[BLE] Comando CHUNK mal formatado: {txt}")
         elif txt_upper.startswith("DEL:"):
@@ -113,6 +129,7 @@ class ConnectService(Service):
             # após deletar, volta para LIST
             self._last_cmd = "LIST"
             self._last_id = None
+            self._queue_response("LIST")
     
     @characteristic(DEVICE_INFO_UUID, CharFlags.READ | CharFlags.NOTIFY)
     def device_info(self, options):
@@ -153,45 +170,13 @@ class ConnectService(Service):
     @characteristic(CONVERSATIONS_UUID, CharFlags.READ | CharFlags.NOTIFY)
     def conversations(self, options):
         try:
-
-            # Modo LIST: retorna lista pequena de conversas (metadados ou poucas conversas)
-            if self._last_cmd == "LIST":
-                conversations_data = []
-                if callable(self.get_conversations_cb):
-                    conversations_data = self.get_conversations_cb() or []
-                conv_json = json.dumps(conversations_data)
-                return bytes(conv_json, 'utf-8')
-            
-            # Modo GET: retorna metadados da conversa (não mais a conversa completa)
-            elif self._last_cmd == "GET" and self._last_id:
-                metadata = None
-                if callable(self.get_conversation_by_id_cb):
-                    metadata = self.get_conversation_by_id_cb(self._last_id)
-                if metadata is None:
-                    metadata = {}
-                conv_json = json.dumps(metadata)
-                # após servir GET, volta para LIST por segurança
-                self._last_cmd = "LIST"
-                self._last_id = None
-                return bytes(conv_json, 'utf-8')
-            
-            # Modo CHUNK: retorna chunk específico da conversa
-            elif self._last_cmd == "CHUNK" and self._last_id is not None:
-                chunk_data = None
-                if callable(self.get_conversation_chunk_cb):
-                    chunk_data = self.get_conversation_chunk_cb(self._last_id, self._last_chunk_index)
-                if chunk_data is None:
-                    chunk_data = {}
-                chunk_json = json.dumps(chunk_data)
-                # após servir CHUNK, volta para LIST
-                self._last_cmd = "LIST"
-                self._last_id = None
-                self._last_chunk_index = 0
-                return bytes(chunk_json, 'utf-8')
-            else:
-                # fallback
-                print(f"[BLE] Estado inválido no READ - retornando []")
-                return bytes("[]", 'utf-8')
+            with self._response_lock:
+                payload = self._pending_response or b"[]"
+                followup = self._next_mode_after_consume
+                self._next_mode_after_consume = None
+            if followup:
+                self._queue_response(followup)
+            return payload
         except Exception as e:
             print(f"[BLE] Erro ao enviar conversas: {e}")
             import traceback
@@ -213,6 +198,54 @@ class ConnectService(Service):
             # ou quando o characteristic state mudar (depende da implementação do bluez_peripheral)
         except Exception as e:
             print(f"[BLE] Erro ao preparar transcrição para envio: {e}")
+
+    def _queue_response(self, mode, conversation_id=None, chunk_index=0):
+        if not self._executor:
+            return
+        self._executor.submit(
+            self._build_response,
+            mode,
+            conversation_id,
+            chunk_index,
+        )
+
+    def _build_response(self, mode, conversation_id=None, chunk_index=0):
+        payload = self._build_response_sync(mode, conversation_id, chunk_index)
+        if payload is None:
+            payload = b"[]"
+        with self._response_lock:
+            self._pending_response = payload
+            self._active_mode = mode
+            self._next_mode_after_consume = "LIST" if mode in {"GET", "CHUNK"} else None
+
+    def _build_response_sync(self, mode, conversation_id=None, chunk_index=0):
+        try:
+            if mode == "LIST":
+                data = []
+                if callable(self.get_conversations_cb):
+                    data = self.get_conversations_cb() or []
+                return json.dumps(data).encode('utf-8')
+            if mode == "GET" and conversation_id:
+                metadata = {}
+                if callable(self.get_conversation_by_id_cb):
+                    metadata = self.get_conversation_by_id_cb(conversation_id) or {}
+                return json.dumps(metadata).encode('utf-8')
+            if mode == "CHUNK" and conversation_id is not None:
+                chunk_data = {}
+                if callable(self.get_conversation_chunk_cb):
+                    chunk_data = self.get_conversation_chunk_cb(conversation_id, chunk_index) or {}
+                return json.dumps(chunk_data).encode('utf-8')
+        except Exception as exc:
+            print(f"[BLE] Erro ao preparar resposta {mode}: {exc}")
+        return b"[]"
+
+    def shutdown_executor(self):
+        if self._executor:
+            try:
+                self._executor.shutdown(wait=False)
+            except Exception:
+                pass
+            self._executor = None
 
 async def _ble_main(
     on_start_cb,
@@ -269,6 +302,10 @@ async def _ble_main(
             pass
         try:
             await service.unregister()
+        except Exception:
+            pass
+        try:
+            service.shutdown_executor()
         except Exception:
             pass
         print("[BLE] stopped")
