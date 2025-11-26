@@ -45,6 +45,7 @@ DEFAULT_CONFIG: Dict[str, object] = {
     "energy_gate_dbfs": -45.0,
     "max_silence_frames": 6,
     "partial_debounce_ms": 120,
+    "word_blacklist": ["aguardando...", "<unk>", "ah"],
 }
 
 
@@ -77,6 +78,10 @@ class Transcriber:
         self.energy_gate_dbfs = float(cfg.get("energy_gate_dbfs", -45.0))
         self.max_silence_frames = int(cfg.get("max_silence_frames", 6))
         self.partial_debounce = float(cfg.get("partial_debounce_ms", 120)) / 1000.0
+        raw_blacklist = cfg.get("word_blacklist", []) or []
+        normalized = [str(item).strip() for item in raw_blacklist if str(item).strip()]
+        self._blacklist_exact = {item.lower() for item in normalized}
+        self._blacklist_tokens = {token.lower() for item in normalized for token in item.split()}
 
         if not os.path.exists(self.model_path):
             raise FileNotFoundError(f"Model not found at {self.model_path}")
@@ -311,7 +316,8 @@ class Transcriber:
             payload = json.loads(self.streaming_recognizer.PartialResult())
         except Exception:
             return
-        partial = payload.get("partial", "") or ""
+        partial_raw = payload.get("partial", "") or ""
+        partial = self._sanitize_text(partial_raw)
         now = time.perf_counter()
         if (
             partial
@@ -329,7 +335,8 @@ class Transcriber:
             payload = json.loads(result_json)
         except Exception:
             return
-        final = payload.get("text", "") or ""
+        final_raw = payload.get("text", "") or ""
+        final = self._sanitize_text(final_raw)
         if final:
             latency = max(0.0, time.perf_counter() - self._last_audio_ts)
             self._latency_samples.append(latency)
@@ -352,6 +359,19 @@ class Transcriber:
             pass
         if self._on_error:
             self._on_error(exc)
+
+    def _sanitize_text(self, text: str) -> str:
+        cleaned = (text or "").strip()
+        if not cleaned:
+            return ""
+        lowered = cleaned.lower()
+        if lowered in self._blacklist_exact:
+            return ""
+        tokens = [token for token in cleaned.split() if token.lower() not in self._blacklist_tokens]
+        sanitized = " ".join(tokens).strip()
+        if sanitized.lower() in self._blacklist_exact:
+            return ""
+        return sanitized
 
     def _signal_worker_shutdown(self) -> None:
         try:

@@ -140,7 +140,17 @@ class TranscriptionManager:
         Args:
             text: Texto finalizado a ser adicionado ao histórico
         """
-        sanitized = text.strip().capitalize() if text else ""
+        sanitized = text.strip() if text else ""
+        waiting = UI_TEXTS.get('waiting_text', '').strip().lower()
+        if sanitized:
+            if sanitized.lower() == waiting:
+                sanitized = ""
+            else:
+                try:
+                    sanitized = sanitized[0].upper() + sanitized[1:]
+                except Exception:
+                    pass
+
         if sanitized:
             self.history.add_line(sanitized)
             Clock.schedule_once(lambda dt: self.scroll.scroll_to(self.history.lines[-1]))
